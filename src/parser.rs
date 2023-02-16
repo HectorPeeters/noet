@@ -1,4 +1,4 @@
-use crate::parse_tree::{Attribute, ParsedElement, ParsedNote};
+use crate::parse_tree::{Attribute, ParsedDocument, ParsedElement};
 
 peg::parser!(pub grammar parser() for str {
     rule text_end()
@@ -88,9 +88,9 @@ peg::parser!(pub grammar parser() for str {
         = p:(paragraph()*)
         { p.into_iter().flatten().collect() }
 
-    pub rule note() -> ParsedNote<'input>
+    pub rule note() -> ParsedDocument<'input>
         = el:paragraphs()
-        { ParsedNote::new(el) }
+        { ParsedDocument::new(el) }
 });
 
 #[cfg(test)]

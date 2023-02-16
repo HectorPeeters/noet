@@ -16,11 +16,11 @@ pub enum ParsedElement<'input> {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ParsedNote<'input> {
+pub struct ParsedDocument<'input> {
     pub elements: Vec<ParsedElement<'input>>,
 }
 
-impl<'input> ParsedNote<'input> {
+impl<'input> ParsedDocument<'input> {
     pub fn new(elements: Vec<ParsedElement<'input>>) -> Self {
         Self { elements }
     }
