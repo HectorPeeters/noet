@@ -1,7 +1,7 @@
 use crate::argument::Argument;
 
 pub type Function<Context, Value> =
-    Box<dyn Fn(&mut Context, &[(&'_ str, Value)], &[Value]) -> Option<Value>>;
+    Box<dyn Fn(&mut Context, &[(&'_ str, Option<Value>)], &[Value]) -> Option<Value>>;
 
 pub trait ToFunction<Context, Value, Args> {
     fn to_function(self) -> Function<Context, Value>;

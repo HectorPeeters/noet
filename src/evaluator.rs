@@ -36,16 +36,18 @@ where
             .filter_map(|a| self.evaluate_element(a))
             .collect::<Vec<_>>();
 
-        //        let evaluated_attributes = attributes
-        //            .iter()
-        //            .filter_map(|attr| match attr {
-        //                Attribute::Flag(name) => ,
-        //                Attribute::Value(_, _) => todo!(),
-        //            })
-        //            .collect::<Vec<_>>();
+        let evaluated_attributes = attributes
+            .into_iter()
+            .filter_map(|attr| match attr {
+                Attribute::Flag(name) => Some((name, None)),
+                Attribute::Value(name, value) => {
+                    self.evaluate_element(value).map(|v| (name, Some(v)))
+                }
+            })
+            .collect::<Vec<_>>();
 
         match self.function_registry.get(name) {
-            Some(func) => func(self.context, &[], &evaluated_arguments),
+            Some(func) => func(self.context, &evaluated_attributes, &evaluated_arguments),
             None => panic!("Function '{name}' not found"),
         }
     }

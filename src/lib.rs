@@ -1,4 +1,8 @@
+#![allow(incomplete_features)]
+#![feature(adt_const_params)]
+
 pub mod argument;
+pub mod attribute;
 pub mod context;
 pub mod evaluator;
 pub mod function;
