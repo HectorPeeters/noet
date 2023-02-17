@@ -1,7 +1,9 @@
 use crate::argument::Argument;
 
+// TODO: attributes should have an optional value. This allows us to remove the `empty` function in
+// the Value trait
 pub type Function<Context, Value> =
-    Box<dyn Fn(&mut Context, &[(&'_ str, Option<Value>)], &[Value]) -> Option<Value>>;
+    Box<dyn Fn(&mut Context, &[(&'_ str, Value)], &[Value]) -> Option<Value>>;
 
 pub trait ToFunction<Context, Value, Args> {
     fn to_function(self) -> Function<Context, Value>;

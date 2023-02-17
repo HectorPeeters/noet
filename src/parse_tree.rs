@@ -1,5 +1,5 @@
 #[derive(Debug, PartialEq)]
-pub enum Attribute<'input> {
+pub enum ParsedAttribute<'input> {
     Flag(&'input str),
     Value(&'input str, ParsedElement<'input>),
 }
@@ -9,7 +9,7 @@ pub enum ParsedElement<'input> {
     Text(&'input str),
     Function(
         &'input str,
-        Vec<Attribute<'input>>,
+        Vec<ParsedAttribute<'input>>,
         Vec<ParsedElement<'input>>,
     ),
     ParagraphBreak(),

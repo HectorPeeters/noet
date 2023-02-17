@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    parse_tree::{Attribute, ParsedDocument, ParsedElement},
+    parse_tree::{ParsedAttribute, ParsedDocument, ParsedElement},
     registry::FunctionRegistry,
     value::Value,
 };
@@ -28,7 +28,7 @@ where
     fn evaluate_function(
         &mut self,
         name: &'input str,
-        attributes: Vec<Attribute<'input>>,
+        attributes: Vec<ParsedAttribute<'input>>,
         arguments: Vec<ParsedElement<'input>>,
     ) -> Option<V> {
         let evaluated_arguments = arguments
@@ -39,9 +39,9 @@ where
         let evaluated_attributes = attributes
             .into_iter()
             .filter_map(|attr| match attr {
-                Attribute::Flag(name) => Some((name, None)),
-                Attribute::Value(name, value) => {
-                    self.evaluate_element(value).map(|v| (name, Some(v)))
+                ParsedAttribute::Flag(name) => Some((name, V::empty())),
+                ParsedAttribute::Value(name, value) => {
+                    self.evaluate_element(value).map(|v| (name, v))
                 }
             })
             .collect::<Vec<_>>();

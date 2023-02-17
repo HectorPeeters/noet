@@ -27,12 +27,16 @@ where
 
     fn from_attributes<I>(attributes: &mut I) -> Option<Self>
     where
-        I: Iterator<Item = &'a (&'a str, Option<Value>)>,
+        I: Iterator<Item = &'a (&'a str, Value)>,
     {
-        attributes
-            .find(|(n, _)| n == &NAME)
-            .map(|(_, x)| Argument::from_value(x.as_ref().unwrap()))
-            .map(|inner| Attribute { inner })
+        let inner = attributes.find(|(n, _)| n == &NAME);
+
+        let inner = match inner {
+            Some((_, value)) => Argument::from_value(value),
+            None => None,
+        };
+
+        Some(Attribute { inner })
     }
 
     fn is_attribute() -> bool {

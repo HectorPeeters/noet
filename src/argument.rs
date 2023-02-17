@@ -16,8 +16,8 @@ where
 
     fn from_attributes<I>(_attributes: &mut I) -> Option<Self>
     where
-        // TODO: (&'a str, Option<Value>) can be its own type
-        I: Iterator<Item = &'a (&'a str, Option<Value>)>,
+        // TODO: (&'a str, Value) can be its own type
+        I: Iterator<Item = &'a (&'a str, Value)>,
     {
         unreachable!()
     }

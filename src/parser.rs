@@ -1,4 +1,4 @@
-use crate::parse_tree::{Attribute, ParsedDocument, ParsedElement};
+use crate::parse_tree::{ParsedAttribute, ParsedDocument, ParsedElement};
 
 peg::parser!(pub grammar parser() for str {
     rule text_end()
@@ -43,15 +43,15 @@ peg::parser!(pub grammar parser() for str {
         = t:$((!")" [_])*)
         { ParsedElement::Text(t) }
 
-    rule attribute() -> Attribute<'input>
+    rule attribute() -> ParsedAttribute<'input>
         = "@" i:identifier() "(" v:attribute_argument() ")"
-        { Attribute::Value(i, v) }
+        { ParsedAttribute::Value(i, v) }
 
-    rule flag_attribute() -> Attribute<'input>
+    rule flag_attribute() -> ParsedAttribute<'input>
         = "@" i:identifier()
-        { Attribute::Flag(i) }
+        { ParsedAttribute::Flag(i) }
 
-    rule attributes() -> Vec<Attribute<'input>>
+    rule attributes() -> Vec<ParsedAttribute<'input>>
         = (attribute() / flag_attribute()) ** _
 
     pub rule function() -> ParsedElement<'input>
@@ -207,7 +207,7 @@ mod tests {
             result,
             Ok(ParsedElement::Function(
                 "test",
-                vec![Attribute::Flag("some-attribute")],
+                vec![ParsedAttribute::Flag("some-attribute")],
                 vec![]
             ))
         );
@@ -220,7 +220,7 @@ mod tests {
             result,
             Ok(ParsedElement::Function(
                 "test",
-                vec![Attribute::Value("lang", ParsedElement::Text("rust"))],
+                vec![ParsedAttribute::Value("lang", ParsedElement::Text("rust"))],
                 vec![]
             ))
         );

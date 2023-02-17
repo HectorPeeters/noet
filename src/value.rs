@@ -5,4 +5,5 @@ where
     Self: Sized,
 {
     fn from_element(element: &ParsedElement<'input>) -> Option<Self>;
+    fn empty() -> Self;
 }
