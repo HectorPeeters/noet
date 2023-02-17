@@ -52,11 +52,10 @@ where
 
     fn evaluate_element(&mut self, element: ParsedElement<'input>) -> Option<V> {
         match element {
-            ParsedElement::Text(t) => V::from_text(t),
             ParsedElement::Function(name, attributes, arguments) => {
                 self.evaluate_function(name, attributes, arguments)
             }
-            ParsedElement::ParagraphBreak() => V::from_pagebreak(),
+            _ => V::from_element(&element),
         }
     }
 

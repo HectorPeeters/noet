@@ -1,6 +1,6 @@
 use toen::{
-    argument::Argument, context::Context, evaluator::Evaluator, parser::parser,
-    registry::FunctionRegistry, value::Value,
+    argument::Argument, context::Context, evaluator::Evaluator, parse_tree::ParsedElement,
+    parser::parser, registry::FunctionRegistry, value::Value,
 };
 
 pub enum CustomValue {
@@ -8,12 +8,11 @@ pub enum CustomValue {
 }
 
 impl<'input> Value<'input> for CustomValue {
-    fn from_text(text: &'input str) -> Option<Self> {
-        Some(CustomValue::Text(text.to_owned()))
-    }
-
-    fn from_pagebreak() -> Option<Self> {
-        None
+    fn from_element(element: &ParsedElement<'input>) -> Option<Self> {
+        match element {
+            ParsedElement::Text(t) => Some(CustomValue::Text(t.to_string())),
+            _ => None,
+        }
     }
 }
 
