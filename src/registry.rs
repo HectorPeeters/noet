@@ -19,6 +19,10 @@ impl<Context, Value> FunctionRegistry<Context, Value> {
     {
         self.bindings.insert(name, func.to_function());
     }
+
+    pub fn get<'input>(&mut self, name: &'input str) -> Option<&Function<Context, Value>> {
+        self.bindings.get(name)
+    }
 }
 
 impl<Context, Value> Default for FunctionRegistry<Context, Value> {

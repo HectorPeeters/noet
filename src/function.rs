@@ -8,13 +8,13 @@ pub trait ToFunction<Context, Value, Args> {
 }
 
 macro_rules! eval_attr_or_arg {
-    ($attrs:ident, $args:ident, $t:ty) => {
+    ($attrs:ident, $args:ident, $t:ty) => {{
         if <$t>::is_attribute() {
             <$t>::from_attributes(&mut $attrs)
         } else {
             <$t>::from_values(&mut $args)
         }
-    };
+    }};
 }
 
 impl<A, Context, Value, Func> ToFunction<Context, Value, A> for Func

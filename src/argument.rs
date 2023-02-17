@@ -29,7 +29,7 @@ where
 
 impl<'a, Value: 'a> Argument<'a, Value> for () {
     fn from_value(_: &'a Value) -> Option<Self> {
-        unreachable!()
+        Some(())
     }
 }
 
