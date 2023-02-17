@@ -1,6 +1,7 @@
 use toen::{
     argument::Argument, attribute::Attribute, context::Context, evaluator::Evaluator,
     parse_tree::ParsedElement, parser::parser, registry::FunctionRegistry, value::Value,
+    variadic::Variadic,
 };
 
 pub enum CustomValue {
@@ -35,6 +36,7 @@ pub struct CustomContext {
     pub value: String,
     pub flag_lang: Option<String>,
     pub flag_export: bool,
+    pub variadic_values: Vec<String>,
 }
 
 impl Context<CustomValue> for CustomContext {
@@ -42,6 +44,7 @@ impl Context<CustomValue> for CustomContext {
         registry.register_function(func_test, "test");
         registry.register_function(func_attr, "attr");
         registry.register_function(func_flag_attr, "flag-attr");
+        registry.register_function(func_variadic, "variadic");
     }
 }
 
@@ -60,6 +63,11 @@ fn func_flag_attr(
     lang: Attribute<"export", ()>,
 ) -> Option<CustomValue> {
     context.flag_export = lang.into_inner().is_some();
+    None
+}
+
+fn func_variadic(context: &mut CustomContext, args: Variadic<String>) -> Option<CustomValue> {
+    context.variadic_values = args.into_inner();
     None
 }
 
@@ -96,7 +104,7 @@ fn evaluate_single_flag_attribute_function() {
     let mut evaluator = Evaluator::new(&mut context);
     evaluator.evaluate_document(document);
 
-    assert_eq!(context.flag_export, true);
+    assert!(context.flag_export);
 }
 
 #[test]
@@ -108,5 +116,24 @@ fn evaluate_single_flag_attribute_function_not_present() {
     let mut evaluator = Evaluator::new(&mut context);
     evaluator.evaluate_document(document);
 
-    assert_eq!(context.flag_export, false);
+    assert!(!context.flag_export);
+}
+
+#[test]
+fn evaluate_variadic() {
+    let mut context = CustomContext::default();
+
+    let document = parser::note("[#variadic first | second | third]").unwrap();
+
+    let mut evaluator = Evaluator::new(&mut context);
+    evaluator.evaluate_document(document);
+
+    assert_eq!(
+        context.variadic_values,
+        vec![
+            "first".to_string(),
+            "second".to_string(),
+            "third".to_string()
+        ]
+    );
 }

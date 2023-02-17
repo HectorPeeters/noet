@@ -29,12 +29,9 @@ where
     where
         I: Iterator<Item = &'a (&'a str, Value)>,
     {
-        let inner = attributes.find(|(n, _)| n == &NAME);
-
-        let inner = match inner {
-            Some((_, value)) => Argument::from_value(value),
-            None => None,
-        };
+        let inner = attributes
+            .find(|(n, _)| n == &NAME)
+            .and_then(|(_, value)| Argument::from_value(value));
 
         Some(Attribute { inner })
     }
