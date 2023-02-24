@@ -6,6 +6,7 @@ pub mod attribute;
 pub mod context;
 pub mod evaluator;
 pub mod function;
+pub mod lexer;
 pub mod parse_tree;
 pub mod parser;
 pub mod registry;
