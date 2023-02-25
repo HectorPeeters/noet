@@ -4,7 +4,7 @@ use itertools::{Itertools, MultiPeek};
 
 pub type Span = Range<usize>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     Text,
     LeftBracket,
@@ -51,9 +51,8 @@ impl<'input> Lexer<'input> {
 
     fn token(&mut self, token_type: TokenType) -> Token<'input> {
         let span = self.start..self.current;
-        let result = Token::new(token_type, &self.input[span.clone()], span);
         self.start = self.current;
-        result
+        Token::new(token_type, &self.input[span.clone()], span)
     }
 
     fn consume(&mut self) -> Option<char> {
@@ -66,7 +65,7 @@ impl<'input> Lexer<'input> {
     }
 
     fn function_identifier(&mut self) -> Token<'input> {
-        let is_valid_char = |c: char| c.is_alphabetic() || c == '-';
+        let is_valid_char = |c: char| c.is_alphabetic() || c.is_numeric() || c == '-';
 
         loop {
             match self.peek() {
@@ -84,10 +83,12 @@ impl<'input> Lexer<'input> {
         let is_invalid_char = |c: char| c == '[' || c == ']' || c == '|' || c == '#';
 
         loop {
+            self.chars.reset_peek();
+
             match self.peek() {
+                None => break,
                 Some(c) if is_invalid_char(c) => break,
                 Some('\n') if self.peek() == Some('\n') => break,
-                None => break,
                 _ => {
                     self.consume();
                 }
@@ -233,6 +234,43 @@ mod tests {
         assert_eq!(
             lexer.next(),
             Some(Token::new(TokenType::RightBracket, "]", 21..22))
+        );
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn function_args_newline() {
+        let input = "[#list\n| First\n| Second\n]";
+        let mut lexer = Lexer::new(input);
+
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::LeftBracket, "[", 0..1))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::FunctionIdentifier, "#list", 1..6))
+        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::Text, "\n", 6..7)));
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::ArgumentSeparator, "|", 7..8))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::Text, " First\n", 8..15))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::ArgumentSeparator, "|", 15..16))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::Text, " Second\n", 16..24))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::RightBracket, "]", 24..25))
         );
         assert!(lexer.next().is_none());
     }
