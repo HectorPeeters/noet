@@ -49,7 +49,7 @@ impl<'input> Lexer<'input> {
         }
     }
 
-    fn token(&mut self, token_type: TokenType) -> Token {
+    fn token(&mut self, token_type: TokenType) -> Token<'input> {
         let span = self.start..self.current;
         let result = Token::new(token_type, &self.input[span.clone()], span);
         self.start = self.current;
@@ -65,7 +65,7 @@ impl<'input> Lexer<'input> {
         self.chars.peek().map(|c| *c)
     }
 
-    fn function_identifier(&mut self) -> Token {
+    fn function_identifier(&mut self) -> Token<'input> {
         let is_valid_char = |c: char| c.is_alphabetic() || c == '-';
 
         loop {
@@ -80,7 +80,7 @@ impl<'input> Lexer<'input> {
         self.token(TokenType::FunctionIdentifier)
     }
 
-    fn text(&mut self) -> Token {
+    fn text(&mut self) -> Token<'input> {
         let is_invalid_char = |c: char| c == '[' || c == ']' || c == '|' || c == '#';
 
         loop {
@@ -96,8 +96,12 @@ impl<'input> Lexer<'input> {
 
         self.token(TokenType::Text)
     }
+}
 
-    pub fn next(&mut self) -> Option<Token> {
+impl<'input> Iterator for Lexer<'input> {
+    type Item = Token<'input>;
+
+    fn next(&mut self) -> Option<Self::Item> {
         let Some(curr) = self.consume() else {
             return None;
         };
