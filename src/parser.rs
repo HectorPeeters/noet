@@ -52,6 +52,26 @@ impl<'input> Parser<'input> {
     }
 
     fn text(&mut self) -> ParsedElement<'input> {
+        let mut bracket_depth = 0;
+        loop {
+            match self.peek_type() {
+                Some(TokenType::Text) => {
+                    self.consume();
+                }
+                Some(TokenType::LeftBracket)
+                    if self.peek_type() != Some(TokenType::FunctionIdentifier) =>
+                {
+                    bracket_depth += 1;
+                    self.consume();
+                }
+                Some(TokenType::RightBracket) if bracket_depth > 0 => {
+                    bracket_depth -= 1;
+                    self.consume();
+                }
+                _ => break,
+            }
+        }
+
         let span = self.get_span();
         ParsedElement::Text(&self.input[span])
     }
@@ -191,6 +211,17 @@ mod tests {
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Text("And this is a new paragraph."))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn matching_brackets() {
+        let mut parser = Parser::new("This is some [simple] text.");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Text("This is some [simple] text."))
         );
         assert!(parser.next().is_none());
     }
