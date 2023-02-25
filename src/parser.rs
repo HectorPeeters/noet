@@ -1,334 +1,169 @@
-use crate::parse_tree::{ParsedAttribute, ParsedDocument, ParsedElement};
+use std::iter::Peekable;
 
-peg::parser!(pub grammar parser() for str {
-    rule text_end()
-        = paragraph_end()
-        / argument_separator()
-        / function_end()
-        / function_start()
+use crate::{
+    lexer::{Lexer, Span, Token, TokenType},
+    parse_tree::{Block, ParsedElement},
+};
 
-    rule matching_square_brackets() -> &'input str
-        = $("[" text() "]")
+pub struct Parser<'input> {
+    input: &'input str,
+    tokens: Peekable<Lexer<'input>>,
+    start: usize,
+    current: usize,
+}
 
-    rule text_component() -> &'input str
-        = $(!text_end() (matching_square_brackets() / [_]))
+impl<'input> Parser<'input> {
+    pub fn new(input: &'input str) -> Self {
+        Self {
+            input,
+            tokens: Lexer::new(input).peekable(),
+            start: 0,
+            current: 0,
+        }
+    }
 
-    rule text() -> &'input str
-        = $(text_component()*)
+    fn consume(&mut self) -> Option<Token<'input>> {
+        let result = self.tokens.next();
+        if let Some(res) = &result {
+            self.current = res.span.end;
+        }
+        result
+    }
 
-    rule text_plus() -> &'input str
-        = $(text_component()+)
-
-    rule _()
-        = [' ' | '\t' | '\n' | '\r']*
-
-    rule identifier() -> &'input str
-        = $(['a'..='z' | 'A'..='Z' | '0'..='9' | '-']+)
-
-    rule function_start() -> &'input str
-        = "[#" i:identifier()
-        { i }
-
-    rule function_end()
-         = "]"
-
-    rule function_arg() -> ParsedElement<'input>
-        = function()
-        / t:text_plus() { ParsedElement::Text(t.trim()) }
-
-    rule argument_separator()
-        = _ "|" _
-
-    rule attribute_argument() -> ParsedElement<'input>
-        = t:$((!")" [_])*)
-        { ParsedElement::Text(t) }
-
-    rule attribute() -> ParsedAttribute<'input>
-        = "@" i:identifier() "(" v:attribute_argument() ")"
-        { ParsedAttribute::Value(i, v) }
-
-    rule flag_attribute() -> ParsedAttribute<'input>
-        = "@" i:identifier()
-        { ParsedAttribute::Flag(i) }
-
-    rule attributes() -> Vec<ParsedAttribute<'input>>
-        = (attribute() / flag_attribute()) ** _
-
-    pub rule function() -> ParsedElement<'input>
-        = s:function_start() _
-        attrs:attributes()  _
-        argument_separator()? _ args:(function_arg() ** argument_separator())
-        _ function_end()
-        {
-            ParsedElement::Function(s, attrs, args)
+    fn consume_expect(&mut self, token_type: TokenType) -> Token<'input> {
+        let token = self.consume();
+        if let Some(token) = token && token.token_type == token_type {
+            return token;
         }
 
-    rule paragraph_component() -> ParsedElement<'input>
-        = function()
-        / t:text_plus() { ParsedElement::Text(t) }
+        panic!("Expected token of type {token_type:?}");
+    }
 
-    rule paragraph_break()
-        = ("\n\n" / "\r\n\r\n")
+    fn peek_type(&mut self) -> Option<TokenType> {
+        self.tokens.peek().map(|t| t.token_type)
+    }
 
-    rule paragraph_end() -> Option<ParsedElement<'input>>
-        = paragraph_break() { Some(ParsedElement::ParagraphBreak {}) }
-        / ![_] { None }
+    fn start_span(&mut self) {
+        self.start = self.current;
+    }
 
-    rule paragraph() -> Vec<ParsedElement<'input>>
-        = es:(paragraph_component()+) e:paragraph_end()
-        {
-            let mut elements = es;
-            if let Some(end) = e {
-                elements.push(end);
+    fn get_span(&mut self) -> Span {
+        let result = self.start..self.current;
+        result
+    }
+
+    fn text(&mut self) -> ParsedElement<'input> {
+        let span = self.get_span();
+        ParsedElement::Text(&self.input[span])
+    }
+
+    fn paragraph_break(&mut self) -> ParsedElement<'input> {
+        ParsedElement::ParagraphBreak()
+    }
+
+    fn trim_argument(block: &mut Block) -> bool {
+        if let Some(ParsedElement::Text(t)) = block.elements.first_mut() {
+            *t = t.trim_start();
+            if t.is_empty() {
+                return false;
             }
-            elements
         }
 
-    pub rule paragraphs() -> Vec<ParsedElement<'input>>
-        = p:(paragraph()*)
-        { p.into_iter().flatten().collect() }
+        if let Some(ParsedElement::Text(t)) = block.elements.last_mut() {
+            *t = t.trim_end();
+            if t.is_empty() {
+                return false;
+            }
+        }
 
-    pub rule note() -> ParsedDocument<'input>
-        = el:paragraphs()
-        { ParsedDocument::new(el) }
-});
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parse_empty() {
-        let result = parser::paragraphs("");
-        assert_eq!(result, Ok(vec![]));
+        true
     }
 
-    #[test]
-    fn parse_spaces() {
-        let result = parser::paragraphs("   ");
-        assert_eq!(result, Ok(vec![ParsedElement::Text("   ")]));
+    fn function(&mut self) -> ParsedElement<'input> {
+        // TODO: check if we have a function identifer, otherwise just parse matching square
+        // brackets.
+        let identifier = self.consume_expect(TokenType::FunctionIdentifier);
+
+        let mut arguments = vec![];
+
+        loop {
+            if self.peek_type() == Some(TokenType::RightBracket) {
+                break;
+            }
+
+            if self.peek_type().is_none() {
+                panic!("Unclosed function brackets");
+            }
+
+            if self.peek_type() == Some(TokenType::ArgumentSeparator) {
+                self.consume();
+            }
+
+            if let Some(mut block) = self.block() {
+                if Self::trim_argument(&mut block) {
+                    arguments.push(block);
+                }
+            } else {
+                panic!("Something weird happened");
+            }
+        }
+
+        self.consume_expect(TokenType::RightBracket);
+
+        let _span = self.get_span();
+
+        ParsedElement::Function(&self.input[identifier.span], arguments)
     }
 
-    #[test]
-    fn parse_single_line_text() {
-        let result = parser::paragraphs("This is some text.");
-        assert_eq!(result, Ok(vec![ParsedElement::Text("This is some text.",)]));
+    fn element(&mut self) -> Option<ParsedElement<'input>> {
+        self.start_span();
+
+        let Some(token) = self.consume() else {
+            return None;
+        };
+
+        match token.token_type {
+            TokenType::Text => Some(self.text()),
+            TokenType::LeftBracket => Some(self.function()),
+            TokenType::ParagraphBreak => Some(self.paragraph_break()),
+            TokenType::RightBracket
+            | TokenType::FunctionIdentifier
+            | TokenType::ArgumentSeparator => panic!("Invalid token found {:?}", token.token_type),
+            TokenType::Error => panic!("Do some better error handling"),
+        }
     }
 
-    #[test]
-    fn parse_multi_line_text() {
-        let result = parser::paragraphs("This is some text\nwhich continues on another line.");
-        assert_eq!(
-            result,
-            Ok(vec![ParsedElement::Text(
-                "This is some text\nwhich continues on another line.",
-            )])
-        );
-    }
+    fn block(&mut self) -> Option<Block<'input>> {
+        let mut elements = vec![];
 
-    #[test]
-    fn parse_single_paragraph() {
-        let result = parser::paragraphs("This is some text.\n\n");
-        assert_eq!(
-            result,
-            Ok(vec![
-                ParsedElement::Text("This is some text.",),
-                ParsedElement::ParagraphBreak(),
-            ])
-        );
-    }
+        if self.peek_type().is_none() {
+            return None;
+        }
 
-    #[test]
-    fn parse_multiple_paragraphs() {
-        let result =
-            parser::paragraphs("This is some text.\n\nThis is some text on another paragraph.");
-        assert_eq!(
-            result,
-            Ok(vec![
-                ParsedElement::Text("This is some text.",),
-                ParsedElement::ParagraphBreak(),
-                ParsedElement::Text("This is some text on another paragraph.",),
-            ])
-        );
-    }
+        loop {
+            let Some(token_type) = self.peek_type() else {
+                break;
+            };
 
-    #[test]
-    fn parse_function_no_args() {
-        let result = parser::function("[#test]");
-        assert_eq!(result, Ok(ParsedElement::Function("test", vec![], vec![])));
-    }
+            match token_type {
+                TokenType::ArgumentSeparator | TokenType::RightBracket => break,
+                _ => match self.element() {
+                    Some(e) => elements.push(e),
+                    None => break,
+                },
+            }
+        }
 
-    #[test]
-    fn parse_function_one_arg() {
-        let result = parser::function("[#test test this is an argument]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![],
-                vec![ParsedElement::Text("test this is an argument")]
-            ))
-        );
-    }
+        let _span = self.get_span();
 
-    #[test]
-    pub fn parse_function_square_bracket_arg_empty() {
-        let result = parser::function("[#test This is an [] argument]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![],
-                vec![ParsedElement::Text("This is an [] argument")],
-            ))
-        );
+        Some(Block::new(elements))
     }
+}
 
-    #[test]
-    pub fn parse_function_square_bracket_arg() {
-        let result =
-            parser::function("[#test This is an [ this also contains some text] argument]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![],
-                vec![ParsedElement::Text(
-                    "This is an [ this also contains some text] argument"
-                )],
-            ))
-        );
-    }
+impl<'input> Iterator for Parser<'input> {
+    type Item = ParsedElement<'input>;
 
-    #[test]
-    fn parse_function_flag_attr() {
-        let result = parser::function("[#test @some-attribute]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![ParsedAttribute::Flag("some-attribute")],
-                vec![]
-            ))
-        );
-    }
-
-    #[test]
-    fn parse_function_attr() {
-        let result = parser::function("[#test @lang(rust)]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![ParsedAttribute::Value("lang", ParsedElement::Text("rust"))],
-                vec![]
-            ))
-        );
-    }
-
-    #[test]
-    fn parse_multiple_function_no_space() {
-        let result = parser::paragraphs(
-            "[#test test this is an argument][#test2 test this is another argument]",
-        );
-        assert_eq!(
-            result,
-            Ok(vec![
-                ParsedElement::Function(
-                    "test",
-                    vec![],
-                    vec![ParsedElement::Text("test this is an argument")]
-                ),
-                ParsedElement::Function(
-                    "test2",
-                    vec![],
-                    vec![ParsedElement::Text("test this is another argument")]
-                )
-            ])
-        );
-    }
-
-    #[test]
-    fn parse_function_in_text() {
-        let result = parser::paragraphs("This is some text with a [#b bold] word.");
-        assert_eq!(
-            result,
-            Ok(vec![
-                ParsedElement::Text("This is some text with a "),
-                ParsedElement::Function("b", vec![], vec![ParsedElement::Text("bold")]),
-                ParsedElement::Text(" word."),
-            ])
-        );
-    }
-
-    #[test]
-    fn parse_multiple_function() {
-        let result = parser::paragraphs(
-            "[#test test this is an argument] [#test2 test this is another argument]",
-        );
-        assert_eq!(
-            result,
-            Ok(vec![
-                ParsedElement::Function(
-                    "test",
-                    vec![],
-                    vec![ParsedElement::Text("test this is an argument")]
-                ),
-                ParsedElement::Text(" "),
-                ParsedElement::Function(
-                    "test2",
-                    vec![],
-                    vec![ParsedElement::Text("test this is another argument")]
-                )
-            ])
-        );
-    }
-
-    #[test]
-    fn parse_function_two_arg() {
-        let result = parser::function("[#test test this is an argument | two arguments]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![],
-                vec![
-                    ParsedElement::Text("test this is an argument"),
-                    ParsedElement::Text("two arguments")
-                ]
-            ))
-        );
-    }
-
-    #[test]
-    fn parse_function_two_arg_new_lines() {
-        let result = parser::function("[#test\ntest this is an argument\n|\ntwo arguments]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![],
-                vec![
-                    ParsedElement::Text("test this is an argument"),
-                    ParsedElement::Text("two arguments")
-                ]
-            ))
-        );
-    }
-
-    #[test]
-    fn parse_function_two_arg_new_lines_leading_separator() {
-        let result = parser::function("[#test\n| test this is an argument\n| two arguments\n]");
-        assert_eq!(
-            result,
-            Ok(ParsedElement::Function(
-                "test",
-                vec![],
-                vec![
-                    ParsedElement::Text("test this is an argument"),
-                    ParsedElement::Text("two arguments")
-                ]
-            ))
-        );
+    fn next(&mut self) -> Option<Self::Item> {
+        self.element()
     }
 }
