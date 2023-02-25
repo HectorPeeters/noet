@@ -1,6 +1,4 @@
-use std::{ops::Range, str::Chars};
-
-use itertools::{Itertools, MultiPeek};
+use std::{collections::VecDeque, ops::Range, str::Chars};
 
 pub type Span = Range<usize>;
 
@@ -34,7 +32,8 @@ impl<'input> Token<'input> {
 
 pub struct Lexer<'input> {
     input: &'input str,
-    chars: MultiPeek<Chars<'input>>,
+    chars: Chars<'input>,
+    peek_buf: VecDeque<char>,
     start: usize,
     current: usize,
 }
@@ -43,7 +42,8 @@ impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
         Self {
             input,
-            chars: input.chars().multipeek(),
+            chars: input.chars(),
+            peek_buf: VecDeque::new(),
             start: 0,
             current: 0,
         }
@@ -57,11 +57,29 @@ impl<'input> Lexer<'input> {
 
     fn consume(&mut self) -> Option<char> {
         self.current += 1;
-        self.chars.next()
+        match self.peek_buf.pop_back() {
+            Some(c) => Some(c),
+            None => self.chars.next(),
+        }
     }
 
+    #[inline]
     fn peek(&mut self) -> Option<char> {
-        self.chars.peek().copied()
+        self.peek_buf.get(0).copied().or_else(|| {
+            self.chars.next().and_then(|c| {
+                self.peek_buf.push_front(c);
+                Some(c)
+            })
+        })
+    }
+
+    fn peek_next(&mut self) -> Option<char> {
+        self.peek_buf.get(1).copied().or_else(|| {
+            self.chars.next().and_then(|c| {
+                self.peek_buf.push_front(c);
+                Some(c)
+            })
+        })
     }
 
     fn function_identifier(&mut self) -> Token<'input> {
@@ -83,12 +101,10 @@ impl<'input> Lexer<'input> {
         let is_invalid_char = |c: char| c == '[' || c == ']' || c == '|' || c == '#';
 
         loop {
-            self.chars.reset_peek();
-
             match self.peek() {
                 None => break,
                 Some(c) if is_invalid_char(c) => break,
-                Some('\n') if self.peek() == Some('\n') => break,
+                Some('\n') if self.peek_next() == Some('\n') => break,
                 _ => {
                     self.consume();
                 }

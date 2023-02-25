@@ -146,7 +146,9 @@ impl<'input> Parser<'input> {
             TokenType::ParagraphBreak => Some(self.paragraph_break()),
             TokenType::RightBracket
             | TokenType::FunctionIdentifier
-            | TokenType::ArgumentSeparator => panic!("Invalid token found {:?}", token.token_type),
+            | TokenType::ArgumentSeparator => {
+                panic!("Invalid token found {:?}", token.token_type)
+            }
             TokenType::Error => panic!("Do some better error handling"),
         }
     }

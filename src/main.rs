@@ -1,9 +1,8 @@
-use toen::parser::Parser;
+use toen::{lexer::Lexer, parser::Parser};
 
 fn main() {
-    let parser = Parser::new(include_str!("../test.eton"));
+    let contents = std::fs::read_to_string("large.eton").unwrap();
+    let parser = Lexer::new(&contents);
 
-    for element in parser {
-        println!("{element:#?}");
-    }
+    println!("{}", parser.count());
 }
