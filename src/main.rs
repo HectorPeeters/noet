@@ -1,9 +1,9 @@
-use toen::{lexer::Lexer, parser::Parser};
+use toen::parser::Parser;
 
 fn main() {
-    let mut parser = Parser::new(include_str!("../test.eton"));
+    let parser = Parser::new(include_str!("../test.eton"));
 
-    while let Some(element) = parser.next() {
+    for element in parser {
         println!("{element:#?}");
     }
 }

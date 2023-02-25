@@ -48,8 +48,7 @@ impl<'input> Parser<'input> {
     }
 
     fn get_span(&mut self) -> Span {
-        let result = self.start..self.current;
-        result
+        self.start..self.current
     }
 
     fn text(&mut self) -> ParsedElement<'input> {
@@ -80,8 +79,7 @@ impl<'input> Parser<'input> {
     }
 
     fn function(&mut self) -> ParsedElement<'input> {
-        // TODO: check if we have a function identifer, otherwise just parse matching square
-        // brackets.
+        // TODO: check if we have a function identifer, otherwise just parse matching brackets
         let identifier = self.consume_expect(TokenType::FunctionIdentifier);
 
         let mut arguments = vec![];
@@ -136,9 +134,7 @@ impl<'input> Parser<'input> {
     fn block(&mut self) -> Option<Block<'input>> {
         let mut elements = vec![];
 
-        if self.peek_type().is_none() {
-            return None;
-        }
+        self.peek_type()?;
 
         loop {
             let Some(token_type) = self.peek_type() else {

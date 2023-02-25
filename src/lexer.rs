@@ -61,7 +61,7 @@ impl<'input> Lexer<'input> {
     }
 
     fn peek(&mut self) -> Option<char> {
-        self.chars.peek().map(|c| *c)
+        self.chars.peek().copied()
     }
 
     fn function_identifier(&mut self) -> Token<'input> {
