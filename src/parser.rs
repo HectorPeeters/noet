@@ -163,3 +163,52 @@ impl<'input> Iterator for Parser<'input> {
         self.element()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn simple_text() {
+        let mut parser = Parser::new("This is some simple text.");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Text("This is some simple text."))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn paragraph() {
+        let mut parser = Parser::new("This is some simple text.\n\nAnd this is a new paragraph.");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Text("This is some simple text."))
+        );
+        assert_eq!(parser.next(), Some(ParsedElement::ParagraphBreak()));
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Text("And this is a new paragraph."))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn function() {
+        let mut parser = Parser::new("[#test first | second]");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Function(
+                "#test",
+                vec![
+                    Block::new(vec![ParsedElement::Text("first")]),
+                    Block::new(vec![ParsedElement::Text("second")])
+                ]
+            ))
+        );
+        assert!(parser.next().is_none());
+    }
+}
