@@ -1,5 +1,6 @@
 #![allow(incomplete_features)]
 #![feature(adt_const_params)]
+#![feature(let_chains)]
 
 pub mod argument;
 pub mod attribute;

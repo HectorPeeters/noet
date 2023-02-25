@@ -1,64 +1,235 @@
-use std::cmp::Ordering;
+use std::{ops::Range, str::Chars};
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd)]
-pub struct Location {
-    pub line: u32,
-    pub col: u32,
+use itertools::{Itertools, MultiPeek};
+
+pub type Span = Range<usize>;
+
+#[derive(Debug, PartialEq)]
+pub enum TokenType {
+    Text,
+    LeftBracket,
+    RightBracket,
+    FunctionIdentifier,
+    ArgumentSeparator,
+    ParagraphBreak,
+    Error,
 }
 
-impl Location {
-    pub fn new(line: u32, col: u32) -> Self {
-        Self { line, col }
+#[derive(Debug, PartialEq)]
+pub struct Token<'input> {
+    pub token_type: TokenType,
+    pub value: &'input str,
+    pub span: Span,
+}
+
+impl<'input> Token<'input> {
+    pub fn new(token_type: TokenType, value: &'input str, span: Span) -> Self {
+        Self {
+            token_type,
+            value,
+            span,
+        }
     }
 }
 
-impl Ord for Location {
-    fn cmp(&self, other: &Self) -> Ordering {
-        if self == other {
-            return Ordering::Equal;
+pub struct Lexer<'input> {
+    input: &'input str,
+    chars: MultiPeek<Chars<'input>>,
+    start: usize,
+    current: usize,
+}
+
+impl<'input> Lexer<'input> {
+    pub fn new(input: &'input str) -> Self {
+        Self {
+            input,
+            chars: input.chars().multipeek(),
+            start: 0,
+            current: 0,
+        }
+    }
+
+    fn token(&mut self, token_type: TokenType) -> Token {
+        let span = self.start..self.current;
+        let result = Token::new(token_type, &self.input[span.clone()], span);
+        self.start = self.current;
+        result
+    }
+
+    fn consume(&mut self) -> Option<char> {
+        self.current += 1;
+        self.chars.next()
+    }
+
+    fn peek(&mut self) -> Option<char> {
+        self.chars.peek().map(|c| *c)
+    }
+
+    fn function_identifier(&mut self) -> Token {
+        let is_valid_char = |c: char| c.is_alphabetic() || c == '-';
+
+        loop {
+            match self.peek() {
+                Some(c) if is_valid_char(c) => {
+                    self.consume();
+                }
+                _ => break,
+            }
         }
 
-        match self.line.cmp(&other.line) {
-            Ordering::Equal => self.col.cmp(&other.col),
-            x => x,
+        self.token(TokenType::FunctionIdentifier)
+    }
+
+    fn text(&mut self) -> Token {
+        let is_invalid_char = |c: char| c == '[' || c == ']' || c == '|' || c == '#';
+
+        loop {
+            match self.peek() {
+                Some(c) if is_invalid_char(c) => break,
+                Some('\n') if self.peek() == Some('\n') => break,
+                None => break,
+                _ => {
+                    self.consume();
+                }
+            }
+        }
+
+        self.token(TokenType::Text)
+    }
+
+    pub fn next(&mut self) -> Option<Token> {
+        let Some(curr) = self.consume() else {
+            return None;
+        };
+
+        match curr {
+            '[' => Some(self.token(TokenType::LeftBracket)),
+            ']' => Some(self.token(TokenType::RightBracket)),
+            '|' => Some(self.token(TokenType::ArgumentSeparator)),
+            '#' => Some(self.function_identifier()),
+            '\n' if self.peek() == Some('\n') => {
+                self.consume();
+                Some(self.token(TokenType::ParagraphBreak))
+            }
+            _ => Some(self.text()),
         }
     }
 }
 
-pub struct Span {
-    pub start: Location,
-    pub end: Location,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl Span {
-    pub fn new(start: Location, end: Location) -> Self {
-        Self { start, end }
+    #[test]
+    fn simple_text() {
+        let input = "This is some simple text.";
+        let mut lexer = Lexer::new(input);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenType::Text,
+                "This is some simple text.",
+                0..25
+            ))
+        );
+        assert!(lexer.next().is_none());
     }
 
-    pub fn extend(&mut self, other: &Span) {
-        self.start = std::cmp::min(self.start, other.start);
-        self.end = std::cmp::max(self.end, other.end);
+    #[test]
+    fn paragraph_break() {
+        let input = "This is some simple text\nthat contains a single newline.\n\nThis is some text on a new paragraph.";
+        let mut lexer = Lexer::new(input);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenType::Text,
+                "This is some simple text\nthat contains a single newline.",
+                0..56
+            ))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::ParagraphBreak, "\n\n", 56..58))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenType::Text,
+                "This is some text on a new paragraph.",
+                58..95
+            ))
+        );
+        assert!(lexer.next().is_none());
     }
-}
 
-pub enum Token {
-    Text(String, Span),
-    LeftBracket(Span),
-    RightBracket(Span),
-    FunctionIdentifier(String, Span),
-    ArgumentSeparator(Span),
-    ParagraphBreak(Span),
-}
+    #[test]
+    fn special_characters() {
+        let input = "[|]#";
+        let mut lexer = Lexer::new(input);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::LeftBracket, "[", 0..1))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::ArgumentSeparator, "|", 1..2))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::RightBracket, "]", 2..3))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::FunctionIdentifier, "#", 3..4))
+        );
+        assert!(lexer.next().is_none());
+    }
 
-impl Token {
-    pub fn span(&self) -> &Span {
-        match self {
-            Token::Text(_, s) => s,
-            Token::LeftBracket(s) => s,
-            Token::RightBracket(s) => s,
-            Token::FunctionIdentifier(_, s) => s,
-            Token::ArgumentSeparator(s) => s,
-            Token::ParagraphBreak(s) => s,
-        }
+    #[test]
+    fn function_identifier() {
+        let input = "#this-is-some-identifier";
+        let mut lexer = Lexer::new(input);
+
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenType::FunctionIdentifier,
+                "#this-is-some-identifier",
+                0..24
+            ))
+        );
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn function() {
+        let input = "[#list First | Second]";
+        let mut lexer = Lexer::new(input);
+
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::LeftBracket, "[", 0..1))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::FunctionIdentifier, "#list", 1..6))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::Text, " First ", 6..13))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::ArgumentSeparator, "|", 13..14))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::Text, " Second", 14..21))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::RightBracket, "]", 21..22))
+        );
+        assert!(lexer.next().is_none());
     }
 }
