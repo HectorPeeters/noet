@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use crate::{
     lexer::{Lexer, Span, Token, TokenType},
-    parse_tree::{Block, ParsedElement},
+    parse_tree::{Attribute, Block, ParsedElement},
 };
 
 pub struct Parser<'input> {
@@ -27,6 +27,7 @@ impl<'input> Parser<'input> {
         if let Some(res) = &result {
             self.current = res.span.end;
         }
+
         result
     }
 
@@ -53,11 +54,18 @@ impl<'input> Parser<'input> {
 
     fn text(&mut self) -> ParsedElement<'input> {
         let mut bracket_depth = 0;
+        let mut paren_depth = 0;
         loop {
             match self.peek_type() {
-                Some(TokenType::Text)
-                | Some(TokenType::LeftParen)
-                | Some(TokenType::RightParen) => {
+                Some(TokenType::Text) => {
+                    self.consume();
+                }
+                Some(TokenType::LeftParen) => {
+                    paren_depth += 1;
+                    self.consume();
+                }
+                Some(TokenType::RightParen) if paren_depth > 0 => {
+                    paren_depth -= 1;
                     self.consume();
                 }
                 Some(TokenType::LeftBracket)
@@ -100,10 +108,34 @@ impl<'input> Parser<'input> {
         true
     }
 
+    fn attribute(&mut self) -> Attribute<'input> {
+        let identifier = self.consume_expect(TokenType::AttributeIdentifier);
+
+        if self.peek_type() == Some(TokenType::LeftParen) {
+            self.consume_expect(TokenType::LeftParen);
+
+            self.start_span();
+            let value = self.text();
+
+            let result = if let ParsedElement::Text(text) = value {
+                Attribute::new_value(identifier.value, text)
+            } else {
+                panic!("Expected text element as attribute value");
+            };
+
+            self.consume_expect(TokenType::RightParen);
+
+            result
+        } else {
+            Attribute::new_flag(identifier.value)
+        }
+    }
+
     fn function(&mut self) -> ParsedElement<'input> {
         // TODO: check if we have a function identifer, otherwise just parse matching brackets
         let identifier = self.consume_expect(TokenType::FunctionIdentifier);
 
+        let mut attributes = vec![];
         let mut arguments = vec![];
 
         loop {
@@ -113,6 +145,11 @@ impl<'input> Parser<'input> {
 
             if self.peek_type().is_none() {
                 panic!("Unclosed function brackets");
+            }
+
+            if self.peek_type() == Some(TokenType::AttributeIdentifier) {
+                attributes.push(self.attribute());
+                continue;
             }
 
             if self.peek_type() == Some(TokenType::ArgumentSeparator) {
@@ -132,7 +169,7 @@ impl<'input> Parser<'input> {
 
         let _span = self.get_span();
 
-        ParsedElement::Function(&self.input[identifier.span], arguments)
+        ParsedElement::Function(&self.input[identifier.span], attributes, arguments)
     }
 
     fn element(&mut self) -> Option<ParsedElement<'input>> {
@@ -167,7 +204,9 @@ impl<'input> Parser<'input> {
             };
 
             match token_type {
-                TokenType::ArgumentSeparator | TokenType::RightBracket => break,
+                TokenType::AttributeIdentifier
+                | TokenType::ArgumentSeparator
+                | TokenType::RightBracket => break,
                 _ => match self.element() {
                     Some(e) => elements.push(e),
                     None => break,
@@ -233,11 +272,11 @@ mod tests {
 
     #[test]
     fn paren_text() {
-        let mut parser = Parser::new("This is some (sim)ple) text.");
+        let mut parser = Parser::new("This is some (simple) text.");
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Text("This is some (sim)ple) text."))
+            Some(ParsedElement::Text("This is some (simple) text."))
         );
         assert!(parser.next().is_none());
     }
@@ -250,6 +289,28 @@ mod tests {
             parser.next(),
             Some(ParsedElement::Function(
                 "#test",
+                vec![],
+                vec![
+                    Block::new(vec![ParsedElement::Text("first")]),
+                    Block::new(vec![ParsedElement::Text("second")])
+                ]
+            ))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn function_attribute() {
+        let mut parser = Parser::new("[#test @abc @def(ghi) first | second]");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Function(
+                "#test",
+                vec![
+                    Attribute::new_flag("@abc"),
+                    Attribute::new_value("@def", "ghi")
+                ],
                 vec![
                     Block::new(vec![ParsedElement::Text("first")]),
                     Block::new(vec![ParsedElement::Text("second")])

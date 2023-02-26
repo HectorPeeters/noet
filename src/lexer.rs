@@ -69,18 +69,18 @@ impl<'input> Lexer<'input> {
     #[inline]
     fn peek(&mut self) -> Option<char> {
         self.peek_buf.get(0).copied().or_else(|| {
-            self.chars.next().and_then(|c| {
+            self.chars.next().map(|c| {
                 self.peek_buf.push_front(c);
-                Some(c)
+                c
             })
         })
     }
 
     fn peek_next(&mut self) -> Option<char> {
         self.peek_buf.get(1).copied().or_else(|| {
-            self.chars.next().and_then(|c| {
+            self.chars.next().map(|c| {
                 self.peek_buf.push_front(c);
-                Some(c)
+                c
             })
         })
     }
@@ -101,8 +101,9 @@ impl<'input> Lexer<'input> {
     }
 
     fn text(&mut self) -> Token<'input> {
-        let is_invalid_char =
-            |c: char| c == '[' || c == ']' || c == '(' || c == ')' || c == '|' || c == '#';
+        let is_invalid_char = |c: char| {
+            c == '[' || c == ']' || c == '(' || c == ')' || c == '|' || c == '#' || c == '@'
+        };
 
         loop {
             match self.peek() {
@@ -310,6 +311,48 @@ mod tests {
         assert_eq!(
             lexer.next(),
             Some(Token::new(TokenType::RightBracket, "]", 24..25))
+        );
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn function_attribute() {
+        let input = "[#list @abc @def(ghi)]";
+        let mut lexer = Lexer::new(input);
+
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::LeftBracket, "[", 0..1))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::FunctionIdentifier, "#list", 1..6))
+        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::Text, " ", 6..7)));
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::AttributeIdentifier, "@abc", 7..11))
+        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenType::Text, " ", 11..12)));
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::AttributeIdentifier, "@def", 12..16))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::LeftParen, "(", 16..17))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::Text, "ghi", 17..20))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::RightParen, ")", 20..21))
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenType::RightBracket, "]", 21..22))
         );
         assert!(lexer.next().is_none());
     }
