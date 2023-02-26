@@ -7,6 +7,8 @@ pub enum TokenType {
     Text,
     LeftBracket,
     RightBracket,
+    LeftParen,
+    RightParen,
     FunctionIdentifier,
     ArgumentSeparator,
     ParagraphBreak,
@@ -98,7 +100,8 @@ impl<'input> Lexer<'input> {
     }
 
     fn text(&mut self) -> Token<'input> {
-        let is_invalid_char = |c: char| c == '[' || c == ']' || c == '|' || c == '#';
+        let is_invalid_char =
+            |c: char| c == '[' || c == ']' || c == '(' || c == ')' || c == '|' || c == '#';
 
         loop {
             match self.peek() {
@@ -126,6 +129,8 @@ impl<'input> Iterator for Lexer<'input> {
         match curr {
             '[' => Some(self.token(TokenType::LeftBracket)),
             ']' => Some(self.token(TokenType::RightBracket)),
+            '(' => Some(self.token(TokenType::LeftParen)),
+            ')' => Some(self.token(TokenType::RightParen)),
             '|' => Some(self.token(TokenType::ArgumentSeparator)),
             '#' => Some(self.function_identifier()),
             '\n' if self.peek() == Some('\n') => {

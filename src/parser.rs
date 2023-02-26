@@ -55,7 +55,9 @@ impl<'input> Parser<'input> {
         let mut bracket_depth = 0;
         loop {
             match self.peek_type() {
-                Some(TokenType::Text) => {
+                Some(TokenType::Text)
+                | Some(TokenType::LeftParen)
+                | Some(TokenType::RightParen) => {
                     self.consume();
                 }
                 Some(TokenType::LeftBracket)
@@ -141,7 +143,7 @@ impl<'input> Parser<'input> {
         };
 
         match token.token_type {
-            TokenType::Text => Some(self.text()),
+            TokenType::Text | TokenType::LeftParen | TokenType::RightParen => Some(self.text()),
             TokenType::LeftBracket => Some(self.function()),
             TokenType::ParagraphBreak => Some(self.paragraph_break()),
             TokenType::RightBracket
@@ -224,6 +226,17 @@ mod tests {
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Text("This is some [simple] text."))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn paren_text() {
+        let mut parser = Parser::new("This is some (sim)ple) text.");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Text("This is some (sim)ple) text."))
         );
         assert!(parser.next().is_none());
     }
