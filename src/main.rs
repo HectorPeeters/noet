@@ -1,4 +1,4 @@
-use toen::{lexer::Lexer, parser::Parser};
+use noet::{lexer::Lexer, parser::Parser};
 
 fn main() {
     let contents = std::fs::read_to_string("large.eton").unwrap();
