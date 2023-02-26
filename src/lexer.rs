@@ -9,6 +9,7 @@ pub enum TokenType {
     RightBracket,
     LeftParen,
     RightParen,
+    AttributeIdentifier,
     FunctionIdentifier,
     ArgumentSeparator,
     ParagraphBreak,
@@ -84,7 +85,7 @@ impl<'input> Lexer<'input> {
         })
     }
 
-    fn function_identifier(&mut self) -> Token<'input> {
+    fn identifier(&mut self, token_type: TokenType) -> Token<'input> {
         let is_valid_char = |c: char| c.is_alphabetic() || c.is_numeric() || c == '-';
 
         loop {
@@ -96,7 +97,7 @@ impl<'input> Lexer<'input> {
             }
         }
 
-        self.token(TokenType::FunctionIdentifier)
+        self.token(token_type)
     }
 
     fn text(&mut self) -> Token<'input> {
@@ -132,7 +133,8 @@ impl<'input> Iterator for Lexer<'input> {
             '(' => Some(self.token(TokenType::LeftParen)),
             ')' => Some(self.token(TokenType::RightParen)),
             '|' => Some(self.token(TokenType::ArgumentSeparator)),
-            '#' => Some(self.function_identifier()),
+            '#' => Some(self.identifier(TokenType::FunctionIdentifier)),
+            '@' => Some(self.identifier(TokenType::AttributeIdentifier)),
             '\n' if self.peek() == Some('\n') => {
                 self.consume();
                 Some(self.token(TokenType::ParagraphBreak))
@@ -221,6 +223,22 @@ mod tests {
             Some(Token::new(
                 TokenType::FunctionIdentifier,
                 "#this-is-some-identifier",
+                0..24
+            ))
+        );
+        assert!(lexer.next().is_none());
+    }
+
+    #[test]
+    fn attribute_identifier() {
+        let input = "@this-is-some-identifier";
+        let mut lexer = Lexer::new(input);
+
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenType::AttributeIdentifier,
+                "@this-is-some-identifier",
                 0..24
             ))
         );
