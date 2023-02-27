@@ -6,6 +6,7 @@ pub type Span = Range<usize>;
 pub enum TokenType {
     Text,
     Whitespace,
+    ParagraphBreak,
     LeftBracket,
     RightBracket,
     LeftParen,
@@ -136,6 +137,10 @@ impl<'input> Iterator for Lexer<'input> {
             '|' => Some(self.token(TokenType::ArgumentSeparator)),
             '#' => Some(self.identifier(TokenType::FunctionIdentifier)),
             '@' => Some(self.identifier(TokenType::AttributeIdentifier)),
+            '\n' if matches!(self.peek(), Some('\n')) => {
+                self.consume();
+                Some(self.token(TokenType::ParagraphBreak))
+            }
             ' ' | '\t' | '\n' | '\r' => Some(self.whitespace()),
             _ => Some(self.text()),
         }

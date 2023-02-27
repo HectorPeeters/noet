@@ -22,7 +22,7 @@ impl<'input> Parser<'input> {
         }
     }
 
-    fn consume(&mut self) -> Option<Token<'input>> {
+    fn consume(&mut self) -> Option<Token> {
         let result = self.tokens.next();
         if let Some(res) = &result {
             self.current = res.span.end;
@@ -31,13 +31,19 @@ impl<'input> Parser<'input> {
         result
     }
 
-    fn consume_expect(&mut self, token_type: TokenType) -> Token<'input> {
+    fn consume_expect(&mut self, token_type: TokenType) -> Token {
         let token = self.consume();
         if let Some(token) = token && token.token_type == token_type {
             return token;
         }
 
         panic!("Expected token of type {token_type:?}");
+    }
+
+    fn skip_whitespace(&mut self) {
+        while self.peek_type() == Some(TokenType::Whitespace) {
+            self.consume_expect(TokenType::Whitespace);
+        }
     }
 
     fn peek_type(&mut self) -> Option<TokenType> {
@@ -57,16 +63,16 @@ impl<'input> Parser<'input> {
 
         loop {
             match self.peek_type() {
-                Some(TokenType::Text) => {
+                Some(TokenType::Text) | Some(TokenType::Whitespace) => {
                     self.consume();
                 }
                 Some(TokenType::LeftParen) => {
-                    paren_depth += 1;
                     self.consume();
+                    paren_depth += 1;
                 }
                 Some(TokenType::RightParen) if paren_depth > 0 => {
-                    paren_depth -= 1;
                     self.consume();
+                    paren_depth -= 1;
                 }
                 // TODO: add support for parsing square brackets without function identifier
                 _ => break,
@@ -100,64 +106,69 @@ impl<'input> Parser<'input> {
     }
 
     fn attribute(&mut self) -> Attribute<'input> {
-        let identifier = self.consume_expect(TokenType::AttributeIdentifier);
+        let key = self.consume_expect(TokenType::AttributeIdentifier);
 
-        if self.peek_type() == Some(TokenType::LeftParen) {
-            self.consume_expect(TokenType::LeftParen);
+        match self.peek_type() {
+            Some(TokenType::Whitespace) => Attribute::new_flag(&self.input[key.span]),
+            Some(TokenType::LeftParen) => {
+                self.consume_expect(TokenType::LeftParen);
 
-            self.start_span();
-            let value = self.text();
+                self.start_span();
 
-            let result = if let ParsedElement::Text(text) = value {
-                Attribute::new_value(identifier.value, text)
-            } else {
-                panic!("Expected text element as attribute value");
-            };
+                let value_element = self.text();
 
-            self.consume_expect(TokenType::RightParen);
+                self.consume_expect(TokenType::RightParen);
 
-            result
-        } else {
-            Attribute::new_flag(identifier.value)
+                if let ParsedElement::Text(value) = value_element {
+                    Attribute::new_value(&self.input[key.span], value)
+                } else {
+                    panic!("Value of attribute should be a string");
+                }
+            }
+            x @ _ => panic!("Unexpected token while parsing attribute {:?}", x),
+        }
+    }
+
+    fn trim_argument(block: &mut Block<'input>) {
+        if let Some(ParsedElement::Text(text)) = block.elements.first_mut() {
+            *text = text.trim_start();
+        }
+
+        if let Some(ParsedElement::Text(text)) = block.elements.last_mut() {
+            *text = text.trim_end();
         }
     }
 
     fn function(&mut self) -> ParsedElement<'input> {
-        // TODO: check if we have a function identifer, otherwise just parse matching brackets
         let identifier = self.consume_expect(TokenType::FunctionIdentifier);
+
+        self.skip_whitespace();
 
         let mut attributes = vec![];
         let mut arguments = vec![];
 
-        loop {
-            if self.peek_type() == Some(TokenType::RightBracket) {
-                break;
-            }
+        while self.peek_type() == Some(TokenType::AttributeIdentifier) {
+            attributes.push(self.attribute());
+            self.skip_whitespace();
+        }
 
-            if self.peek_type().is_none() {
-                panic!("Unclosed function brackets");
-            }
+        if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
+            self.consume_expect(TokenType::ArgumentSeparator);
+        }
 
-            if self.peek_type() == Some(TokenType::AttributeIdentifier) {
-                attributes.push(self.attribute());
-                continue;
-            }
+        while self.peek_type() != Some(TokenType::RightBracket) {
+            let mut argument = self.block();
+            Self::trim_argument(&mut argument);
+            arguments.push(argument);
 
-            if self.peek_type() == Some(TokenType::ArgumentSeparator) {
-                self.consume();
-            }
-
-            if let Some(mut block) = self.block() {
-                if Self::trim_argument(&mut block) {
-                    arguments.push(block);
-                }
-            } else {
-                panic!("Something weird happened");
+            if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
+                self.consume_expect(TokenType::ArgumentSeparator);
             }
         }
 
         self.consume_expect(TokenType::RightBracket);
 
+<<<<<<< HEAD
         let _span = self.get_span();
 
         ParsedElement::Function(
@@ -165,38 +176,18 @@ impl<'input> Parser<'input> {
             attributes,
             arguments,
         )
+=======
+        ParsedElement::Function(&self.input[identifier.span], attributes, arguments)
+>>>>>>> 1a81b08 (Lex whitespace as separate tokens)
     }
 
-    fn element(&mut self) -> Option<ParsedElement<'input>> {
-        self.start_span();
-
-        let Some(token) = self.consume() else {
-            return None;
-        };
-
-        match token.token_type {
-            TokenType::Text | TokenType::LeftParen | TokenType::RightParen => Some(self.text()),
-            TokenType::LeftBracket => Some(self.function()),
-            TokenType::ParagraphBreak => Some(self.paragraph_break()),
-            TokenType::RightBracket
-            | TokenType::AttributeIdentifier
-            | TokenType::FunctionIdentifier
-            | TokenType::ArgumentSeparator => {
-                panic!("Invalid token found {:?}", token.token_type)
-            }
-            TokenType::Error => panic!("Do some better error handling"),
-        }
-    }
-
-    fn block(&mut self) -> Option<Block<'input>> {
+    fn block(&mut self) -> Block<'input> {
         let mut elements = vec![];
-
-        self.peek_type()?;
 
         loop {
             let Some(token_type) = self.peek_type() else {
-                break;
-            };
+                 break;
+             };
 
             match token_type {
                 TokenType::AttributeIdentifier
@@ -209,9 +200,27 @@ impl<'input> Parser<'input> {
             }
         }
 
-        let _span = self.get_span();
+        Block::new(elements)
+    }
 
-        Some(Block::new(elements))
+    fn element(&mut self) -> Option<ParsedElement<'input>> {
+        self.start_span();
+
+        let Some(token) = self.consume() else {
+            return None;
+        };
+
+        match token.token_type {
+            TokenType::Text | TokenType::Whitespace | TokenType::LeftParen => Some(self.text()),
+            TokenType::ParagraphBreak => Some(ParsedElement::ParagraphBreak()),
+            TokenType::LeftBracket => Some(self.function()),
+            TokenType::RightBracket => todo!(),
+            TokenType::RightParen => todo!(),
+            TokenType::AttributeIdentifier => todo!(),
+            TokenType::FunctionIdentifier => todo!(),
+            TokenType::ArgumentSeparator => todo!(),
+            TokenType::Error => todo!(),
+        }
     }
 }
 
@@ -255,7 +264,11 @@ mod tests {
     }
 
     #[test]
+<<<<<<< HEAD
     fn paren_text() {
+=======
+    fn matching_parens() {
+>>>>>>> 1a81b08 (Lex whitespace as separate tokens)
         let mut parser = Parser::new("This is some (simple) text.");
 
         assert_eq!(
