@@ -22,6 +22,7 @@ impl<'input> Parser<'input> {
         }
     }
 
+    #[inline]
     fn consume(&mut self) -> Option<Token> {
         let result = self.tokens.next();
         if let Some(res) = &result {
@@ -31,6 +32,7 @@ impl<'input> Parser<'input> {
         result
     }
 
+    #[inline]
     fn consume_expect(&mut self, token_type: TokenType) -> Token {
         let token = self.consume();
         if let Some(token) = token && token.token_type == token_type {
@@ -40,24 +42,29 @@ impl<'input> Parser<'input> {
         panic!("Expected token of type {token_type:?}");
     }
 
+    #[inline]
     fn skip_whitespace(&mut self) {
         while self.peek_type() == Some(TokenType::Whitespace) {
             self.consume_expect(TokenType::Whitespace);
         }
     }
 
+    #[inline]
     fn peek_type(&mut self) -> Option<TokenType> {
         self.tokens.peek().map(|t| t.token_type)
     }
 
+    #[inline]
     fn start_span(&mut self) {
         self.start = self.current;
     }
 
+    #[inline]
     fn get_span(&mut self) -> Span {
         self.start..self.current
     }
 
+    #[inline]
     fn text(&mut self) -> ParsedElement<'input> {
         let mut paren_depth = 0;
 
@@ -105,6 +112,7 @@ impl<'input> Parser<'input> {
         !block.elements.is_empty()
     }
 
+    #[inline]
     fn attribute(&mut self) -> Attribute<'input> {
         let key = self.consume_expect(TokenType::AttributeIdentifier);
 
@@ -129,6 +137,7 @@ impl<'input> Parser<'input> {
         }
     }
 
+    #[inline]
     fn trim_argument(block: &mut Block<'input>) {
         if let Some(ParsedElement::Text(text)) = block.elements.first_mut() {
             *text = text.trim_start();
@@ -139,6 +148,7 @@ impl<'input> Parser<'input> {
         }
     }
 
+    #[inline]
     fn function(&mut self) -> ParsedElement<'input> {
         let identifier = self.consume_expect(TokenType::FunctionIdentifier);
 
@@ -181,6 +191,7 @@ impl<'input> Parser<'input> {
 >>>>>>> 1a81b08 (Lex whitespace as separate tokens)
     }
 
+    #[inline]
     fn block(&mut self) -> Block<'input> {
         let mut elements = vec![];
 
