@@ -223,7 +223,7 @@ impl<'input> Parser<'input> {
 
         match token.token_type {
             TokenType::Text | TokenType::Whitespace | TokenType::LeftParen => Some(self.text()),
-            TokenType::ParagraphBreak => Some(ParsedElement::ParagraphBreak()),
+            TokenType::HardLinebreak => Some(ParsedElement::HardLinebreak()),
             TokenType::LeftBracket => Some(self.function()),
             TokenType::RightBracket => todo!(),
             TokenType::RightParen => todo!(),
@@ -266,7 +266,7 @@ mod tests {
             parser.next(),
             Some(ParsedElement::Text("This is some simple text."))
         );
-        assert_eq!(parser.next(), Some(ParsedElement::ParagraphBreak()));
+        assert_eq!(parser.next(), Some(ParsedElement::HardLinebreak()));
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Text("And this is a new paragraph."))

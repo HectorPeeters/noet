@@ -21,7 +21,7 @@ impl<'input> Attribute<'input> {
 pub enum ParsedElement<'input> {
     Text(&'input str),
     Function(&'input str, Vec<Attribute<'input>>, Vec<Block<'input>>),
-    ParagraphBreak(),
+    HardLinebreak(),
 }
 
 #[derive(Debug, PartialEq)]
