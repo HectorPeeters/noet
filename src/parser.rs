@@ -160,7 +160,11 @@ impl<'input> Parser<'input> {
 
         let _span = self.get_span();
 
-        ParsedElement::Function(&self.input[identifier.span], attributes, arguments)
+        ParsedElement::Function(
+            &self.input[identifier.span].trim_start_matches(|c| c == '#'),
+            attributes,
+            arguments,
+        )
     }
 
     fn element(&mut self) -> Option<ParsedElement<'input>> {
@@ -268,7 +272,7 @@ mod tests {
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Function(
-                "#test",
+                "test",
                 vec![],
                 vec![
                     Block::new(vec![ParsedElement::Text("first")]),
@@ -286,7 +290,7 @@ mod tests {
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Function(
-                "#title",
+                "title",
                 vec![],
                 vec![Block::new(vec![ParsedElement::Text("Test Document")]),]
             ))
@@ -295,7 +299,7 @@ mod tests {
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Function(
-                "#authors",
+                "authors",
                 vec![],
                 vec![
                     Block::new(vec![ParsedElement::Text("John Doe")]),
@@ -313,7 +317,7 @@ mod tests {
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Function(
-                "#test",
+                "test",
                 vec![
                     Attribute::new_flag("@abc"),
                     Attribute::new_value("@def", "ghi")
