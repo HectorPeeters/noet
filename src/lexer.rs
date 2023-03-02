@@ -45,7 +45,7 @@ impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
         Self {
             input,
-            chars: input.chars(),
+            chars: input.trim().chars(),
             peek_buf: VecDeque::new(),
             start: 0,
             current: 0,

@@ -85,18 +85,18 @@ impl<'input> Parser<'input> {
         if let Some(ParsedElement::Text(t)) = block.elements.first_mut() {
             *t = t.trim_start();
             if t.is_empty() {
-                return false;
+                block.elements.remove(0);
             }
         }
 
         if let Some(ParsedElement::Text(t)) = block.elements.last_mut() {
             *t = t.trim_end();
             if t.is_empty() {
-                return false;
+                block.elements.pop();
             }
         }
 
-        true
+        !block.elements.is_empty()
     }
 
     fn attribute(&mut self) -> Attribute<'input> {
@@ -326,6 +326,52 @@ mod tests {
                     Block::new(vec![ParsedElement::Text("first")]),
                     Block::new(vec![ParsedElement::Text("second")])
                 ]
+            ))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn function_multiline_argument() {
+        let mut parser = Parser::new(
+            "[#quote\nSome quote...\n\nSpread over multiple paragraphs.\nBecause edgecases!\n]",
+        );
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Function(
+                "quote",
+                vec![],
+                vec![Block {
+                    elements: vec![
+                        ParsedElement::Text("Some quote..."),
+                        ParsedElement::ParagraphBreak(),
+                        ParsedElement::Text("Spread over multiple paragraphs.\nBecause edgecases!"),
+                    ]
+                }]
+            ))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn nested_functions() {
+        let mut parser = Parser::new("[#list [#mi \\lambda x.M]]");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Function(
+                "list",
+                vec![],
+                vec![Block {
+                    elements: vec![ParsedElement::Function(
+                        "mi",
+                        vec![],
+                        vec![Block {
+                            elements: vec![ParsedElement::Text("\\lambda x.M")]
+                        }]
+                    )]
+                }]
             ))
         );
         assert!(parser.next().is_none());
