@@ -137,8 +137,6 @@ impl<'input> Parser<'input> {
     fn function(&mut self) -> ParsedElement<'input> {
         let identifier = self.consume_expect(TokenType::FunctionIdentifier);
 
-        println!("{:?}", &self.input[identifier.span.clone()]);
-
         self.skip_whitespace();
 
         let mut attributes = vec![];
@@ -154,7 +152,6 @@ impl<'input> Parser<'input> {
         }
 
         while self.peek_type() != Some(TokenType::RightBracket) {
-            println!("Parsing attribute");
             let mut argument = self.block();
             Self::trim_argument(&mut argument);
             arguments.push(argument);
@@ -185,8 +182,6 @@ impl<'input> Parser<'input> {
             let Some(token_type) = self.peek_type() else {
                  break;
             };
-
-            println!("B {:?}", token_type);
 
             match token_type {
                 TokenType::AttributeIdentifier
