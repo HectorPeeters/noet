@@ -90,28 +90,6 @@ impl<'input> Parser<'input> {
         ParsedElement::Text(&self.input[span])
     }
 
-    fn paragraph_break(&mut self) -> ParsedElement<'input> {
-        ParsedElement::ParagraphBreak()
-    }
-
-    fn trim_argument(block: &mut Block) -> bool {
-        if let Some(ParsedElement::Text(t)) = block.elements.first_mut() {
-            *t = t.trim_start();
-            if t.is_empty() {
-                block.elements.remove(0);
-            }
-        }
-
-        if let Some(ParsedElement::Text(t)) = block.elements.last_mut() {
-            *t = t.trim_end();
-            if t.is_empty() {
-                block.elements.pop();
-            }
-        }
-
-        !block.elements.is_empty()
-    }
-
     #[inline]
     fn attribute(&mut self) -> Attribute<'input> {
         let key = self.consume_expect(TokenType::AttributeIdentifier);
@@ -137,15 +115,22 @@ impl<'input> Parser<'input> {
         }
     }
 
-    #[inline]
-    fn trim_argument(block: &mut Block<'input>) {
-        if let Some(ParsedElement::Text(text)) = block.elements.first_mut() {
-            *text = text.trim_start();
+    fn trim_argument(block: &mut Block) -> bool {
+        if let Some(ParsedElement::Text(t)) = block.elements.first_mut() {
+            *t = t.trim_start();
+            if t.is_empty() {
+                block.elements.remove(0);
+            }
         }
 
-        if let Some(ParsedElement::Text(text)) = block.elements.last_mut() {
-            *text = text.trim_end();
+        if let Some(ParsedElement::Text(t)) = block.elements.last_mut() {
+            *t = t.trim_end();
+            if t.is_empty() {
+                block.elements.pop();
+            }
         }
+
+        !block.elements.is_empty()
     }
 
     #[inline]
@@ -178,7 +163,6 @@ impl<'input> Parser<'input> {
 
         self.consume_expect(TokenType::RightBracket);
 
-<<<<<<< HEAD
         let _span = self.get_span();
 
         ParsedElement::Function(
@@ -186,9 +170,6 @@ impl<'input> Parser<'input> {
             attributes,
             arguments,
         )
-=======
-        ParsedElement::Function(&self.input[identifier.span], attributes, arguments)
->>>>>>> 1a81b08 (Lex whitespace as separate tokens)
     }
 
     #[inline]
@@ -275,21 +256,6 @@ mod tests {
     }
 
     #[test]
-<<<<<<< HEAD
-    fn paren_text() {
-=======
-    fn matching_parens() {
->>>>>>> 1a81b08 (Lex whitespace as separate tokens)
-        let mut parser = Parser::new("This is some (simple) text.");
-
-        assert_eq!(
-            parser.next(),
-            Some(ParsedElement::Text("This is some (simple) text."))
-        );
-        assert!(parser.next().is_none());
-    }
-
-    #[test]
     fn function() {
         let mut parser = Parser::new("[#test first | second]");
 
@@ -369,7 +335,7 @@ mod tests {
                 vec![Block {
                     elements: vec![
                         ParsedElement::Text("Some quote..."),
-                        ParsedElement::ParagraphBreak(),
+                        ParsedElement::HardLinebreak(),
                         ParsedElement::Text("Spread over multiple paragraphs.\nBecause edgecases!"),
                     ]
                 }]
