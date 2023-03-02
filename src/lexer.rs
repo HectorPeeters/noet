@@ -63,7 +63,7 @@ impl<'input> Lexer<'input> {
 
     fn identifier(&mut self, token_type: TokenType) -> Token {
         let is_valid_char = |c: char| {
-            (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-'
+            c.is_ascii_lowercase() || c.is_ascii_uppercase() || c.is_ascii_digit() || c == '-'
         };
 
         loop {

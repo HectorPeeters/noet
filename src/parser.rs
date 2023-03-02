@@ -111,7 +111,7 @@ impl<'input> Parser<'input> {
                     panic!("Value of attribute should be a string");
                 }
             }
-            x @ _ => panic!("Unexpected token while parsing attribute {:?}", x),
+            x => panic!("Unexpected token while parsing attribute {:?}", x),
         }
     }
 
@@ -171,7 +171,7 @@ impl<'input> Parser<'input> {
         let _span = self.get_span();
 
         ParsedElement::Function(
-            &self.input[identifier.span].trim_start_matches(|c| c == '#'),
+            self.input[identifier.span].trim_start_matches(|c| c == '#'),
             attributes,
             arguments,
         )
