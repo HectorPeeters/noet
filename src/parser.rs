@@ -65,8 +65,8 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    fn text(&mut self) -> ParsedElement<'input> {
-        let mut paren_depth = 0;
+    fn text(&mut self, start_with_parent: bool) -> ParsedElement<'input> {
+        let mut paren_depth = start_with_parent as u32;
 
         loop {
             match self.peek_type() {
@@ -101,7 +101,7 @@ impl<'input> Parser<'input> {
 
                 self.start_span();
 
-                let value_element = self.text();
+                let value_element = self.text(false);
 
                 self.consume_expect(TokenType::RightParen);
 
@@ -137,6 +137,8 @@ impl<'input> Parser<'input> {
     fn function(&mut self) -> ParsedElement<'input> {
         let identifier = self.consume_expect(TokenType::FunctionIdentifier);
 
+        println!("{:?}", &self.input[identifier.span.clone()]);
+
         self.skip_whitespace();
 
         let mut attributes = vec![];
@@ -152,12 +154,15 @@ impl<'input> Parser<'input> {
         }
 
         while self.peek_type() != Some(TokenType::RightBracket) {
+            println!("Parsing attribute");
             let mut argument = self.block();
             Self::trim_argument(&mut argument);
             arguments.push(argument);
 
             if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
                 self.consume_expect(TokenType::ArgumentSeparator);
+            } else {
+                // TODO: peek_type() should return a RightBracket
             }
         }
 
@@ -179,7 +184,9 @@ impl<'input> Parser<'input> {
         loop {
             let Some(token_type) = self.peek_type() else {
                  break;
-             };
+            };
+
+            println!("B {:?}", token_type);
 
             match token_type {
                 TokenType::AttributeIdentifier
@@ -203,7 +210,8 @@ impl<'input> Parser<'input> {
         };
 
         match token.token_type {
-            TokenType::Text | TokenType::Whitespace | TokenType::LeftParen => Some(self.text()),
+            TokenType::Text | TokenType::Whitespace => Some(self.text(false)),
+            TokenType::LeftParen => Some(self.text(true)),
             TokenType::HardLinebreak => Some(ParsedElement::HardLinebreak()),
             TokenType::LeftBracket => Some(self.function()),
             TokenType::RightBracket => todo!(),
@@ -236,6 +244,25 @@ mod tests {
             parser.next(),
             Some(ParsedElement::Text("This is some simple text."))
         );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn matching_paren_text() {
+        let mut parser = Parser::new("This is some (simple) text.");
+
+        assert_eq!(
+            parser.next(),
+            Some(ParsedElement::Text("This is some (simple) text."))
+        );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn matching_paren_start_text() {
+        let mut parser = Parser::new("(simple)");
+
+        assert_eq!(parser.next(), Some(ParsedElement::Text("(simple)")));
         assert!(parser.next().is_none());
     }
 
@@ -346,22 +373,33 @@ mod tests {
 
     #[test]
     fn nested_functions() {
-        let mut parser = Parser::new("[#list [#mi \\lambda x.M]]");
+        let mut parser = Parser::new("[#list [#mi \\lambda x.M] |\n[#mi (M\\;N)]]");
 
         assert_eq!(
             parser.next(),
             Some(ParsedElement::Function(
                 "list",
                 vec![],
-                vec![Block {
-                    elements: vec![ParsedElement::Function(
-                        "mi",
-                        vec![],
-                        vec![Block {
-                            elements: vec![ParsedElement::Text("\\lambda x.M")]
-                        }]
-                    )]
-                }]
+                vec![
+                    Block {
+                        elements: vec![ParsedElement::Function(
+                            "mi",
+                            vec![],
+                            vec![Block {
+                                elements: vec![ParsedElement::Text("\\lambda x.M")]
+                            }]
+                        )]
+                    },
+                    Block {
+                        elements: vec![ParsedElement::Function(
+                            "mi",
+                            vec![],
+                            vec![Block {
+                                elements: vec![ParsedElement::Text("(M\\;N)")]
+                            }]
+                        )]
+                    }
+                ]
             ))
         );
         assert!(parser.next().is_none());
