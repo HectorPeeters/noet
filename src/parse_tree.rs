@@ -1,10 +1,10 @@
 #[derive(Debug, PartialEq)]
-pub struct Attribute<'input> {
+pub struct ParsedAttribute<'input> {
     pub key: &'input str,
     pub value: Option<&'input str>,
 }
 
-impl<'input> Attribute<'input> {
+impl<'input> ParsedAttribute<'input> {
     pub fn new_flag(key: &'input str) -> Self {
         Self { key, value: None }
     }
@@ -20,7 +20,11 @@ impl<'input> Attribute<'input> {
 #[derive(Debug, PartialEq)]
 pub enum ParsedElement<'input> {
     Text(&'input str),
-    Function(&'input str, Vec<Attribute<'input>>, Vec<Block<'input>>),
+    Function(
+        &'input str,
+        Vec<ParsedAttribute<'input>>,
+        Vec<Block<'input>>,
+    ),
     HardLinebreak(),
 }
 
