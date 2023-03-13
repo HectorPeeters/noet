@@ -1,4 +1,9 @@
-use crate::value::Value;
+use std::any::type_name;
+
+use crate::{
+    error::{Error, Result},
+    value::Value,
+};
 
 pub trait Argument<'input, Value: 'input>
 where
@@ -6,11 +11,20 @@ where
 {
     fn from_value(value: &Value) -> Self;
 
-    fn from_values<I>(values: &mut I) -> Option<Self>
+    fn from_values<I>(values: &mut I) -> Result<Self>
     where
         I: Iterator<Item = &'input Value>,
     {
-        values.next().map(|v| Self::from_value(v))
+        values
+            .next()
+            .map(|v| Self::from_value(v))
+            .ok_or(Error::Type(
+                format!(
+                    "Argument of type {} is missing a value",
+                    type_name::<Self>()
+                ),
+                None,
+            ))
     }
 }
 

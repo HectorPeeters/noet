@@ -16,8 +16,7 @@ where
         Box::new(move |context, attrs, args| {
             let mut args = args.iter();
 
-            // TODO: get rid of unwrap
-            let arg = A::from_values(&mut args).unwrap();
+            let arg = A::from_values(&mut args)?;
 
             self(context, attrs, arg)
         })
@@ -34,9 +33,8 @@ where
         Box::new(move |context, attrs, args| {
             let mut args = args.iter();
 
-            // TODO: get rid of unwrap
-            let arg1 = A::from_values(&mut args).unwrap();
-            let arg2 = B::from_values(&mut args).unwrap();
+            let arg1 = A::from_values(&mut args)?;
+            let arg2 = B::from_values(&mut args)?;
 
             self(context, attrs, arg1, arg2)
         })
@@ -54,10 +52,9 @@ where
         Box::new(move |context, attrs, args| {
             let mut args = args.iter();
 
-            // TODO: get rid of unwrap
-            let arg1 = A::from_values(&mut args).unwrap();
-            let arg2 = B::from_values(&mut args).unwrap();
-            let arg3 = C::from_values(&mut args).unwrap();
+            let arg1 = A::from_values(&mut args)?;
+            let arg2 = B::from_values(&mut args)?;
+            let arg3 = C::from_values(&mut args)?;
 
             self(context, attrs, arg1, arg2, arg3)
         })
@@ -76,11 +73,10 @@ where
         Box::new(move |context, attrs, args| {
             let mut args = args.iter();
 
-            // TODO: get rid of unwrap
-            let arg1 = A::from_values(&mut args).unwrap();
-            let arg2 = B::from_values(&mut args).unwrap();
-            let arg3 = C::from_values(&mut args).unwrap();
-            let arg4 = D::from_values(&mut args).unwrap();
+            let arg1 = A::from_values(&mut args)?;
+            let arg2 = B::from_values(&mut args)?;
+            let arg3 = C::from_values(&mut args)?;
+            let arg4 = D::from_values(&mut args)?;
 
             self(context, attrs, arg1, arg2, arg3, arg4)
         })

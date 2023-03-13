@@ -1,4 +1,4 @@
-use crate::argument::Argument;
+use crate::{argument::Argument, error::Result};
 
 pub struct Variadic<T> {
     inner: Vec<T>,
@@ -20,11 +20,11 @@ where
         }
     }
 
-    fn from_values<I>(values: &mut I) -> Option<Self>
+    fn from_values<I>(values: &mut I) -> Result<Self>
     where
         I: Iterator<Item = &'input Value>,
     {
-        Some(Variadic {
+        Ok(Variadic {
             inner: values.map(|v| T::from_value(v)).collect(),
         })
     }
