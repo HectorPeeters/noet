@@ -7,78 +7,107 @@ pub trait ToFunction<Context, Value, Args> {
     fn to_function(self) -> Function<Context, Value>;
 }
 
-impl<A, Context, Value, Func> ToFunction<Context, Value, (A,)> for Func
-where
-    A: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A) -> Result<Option<Value>> + 'static,
-{
-    fn to_function(self) -> Function<Context, Value> {
-        Box::new(move |context, attrs, args| {
-            let mut args = args.into_iter();
+macro_rules! impl_func_args_1 {
+    ($ret:ty, $ret_map:expr) => {
+        impl<A, Context, Value, Func> ToFunction<Context, Value, (A, $ret)> for Func
+        where
+            A: for<'a> Argument<'a, Value>,
+            Func: Fn(&mut Context, Attrs, A) -> Result<$ret> + 'static,
+        {
+            fn to_function(self) -> Function<Context, Value> {
+                Box::new(move |context, attrs, args| {
+                    let mut args = args.into_iter();
 
-            let arg = A::from_values(&mut args)?;
+                    let arg = A::from_values(&mut args)?;
 
-            self(context, attrs, arg)
-        })
-    }
+                    self(context, attrs, arg).map($ret_map)
+                })
+            }
+        }
+    };
 }
 
-impl<A, B, Context, Value, Func> ToFunction<Context, Value, (A, B)> for Func
-where
-    A: for<'a> Argument<'a, Value>,
-    B: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A, B) -> Result<Option<Value>> + 'static,
-{
-    fn to_function(self) -> Function<Context, Value> {
-        Box::new(move |context, attrs, args| {
-            let mut args = args.into_iter();
+impl_func_args_1!((), |_| None);
+impl_func_args_1!(Option<Value>, |x| x);
 
-            let arg1 = A::from_values(&mut args)?;
-            let arg2 = B::from_values(&mut args)?;
+macro_rules! impl_func_args_2 {
+    ($ret:ty, $ret_map:expr) => {
+        impl<A, B, Context, Value, Func> ToFunction<Context, Value, (A, B, $ret)> for Func
+        where
+            A: for<'a> Argument<'a, Value>,
+            B: for<'a> Argument<'a, Value>,
+            Func: Fn(&mut Context, Attrs, A, B) -> Result<$ret> + 'static,
+        {
+            fn to_function(self) -> Function<Context, Value> {
+                Box::new(move |context, attrs, args| {
+                    let mut args = args.into_iter();
 
-            self(context, attrs, arg1, arg2)
-        })
-    }
+                    let arg1 = A::from_values(&mut args)?;
+                    let arg2 = B::from_values(&mut args)?;
+
+                    self(context, attrs, arg1, arg2).map($ret_map)
+                })
+            }
+        }
+    };
 }
 
-impl<A, B, C, Context, Value, Func> ToFunction<Context, Value, (A, B, C)> for Func
-where
-    A: for<'a> Argument<'a, Value>,
-    B: for<'a> Argument<'a, Value>,
-    C: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A, B, C) -> Result<Option<Value>> + 'static,
-{
-    fn to_function(self) -> Function<Context, Value> {
-        Box::new(move |context, attrs, args| {
-            let mut args = args.into_iter();
+impl_func_args_2!((), |_| None);
+impl_func_args_2!(Option<Value>, |x| x);
 
-            let arg1 = A::from_values(&mut args)?;
-            let arg2 = B::from_values(&mut args)?;
-            let arg3 = C::from_values(&mut args)?;
+macro_rules! impl_func_args_3 {
+    ($ret:ty, $ret_map:expr) => {
+        impl<A, B, C, Context, Value, Func> ToFunction<Context, Value, (A, B, C, $ret)> for Func
+        where
+            A: for<'a> Argument<'a, Value>,
+            B: for<'a> Argument<'a, Value>,
+            C: for<'a> Argument<'a, Value>,
+            Func: Fn(&mut Context, Attrs, A, B, C) -> Result<$ret> + 'static,
+        {
+            fn to_function(self) -> Function<Context, Value> {
+                Box::new(move |context, attrs, args| {
+                    let mut args = args.into_iter();
 
-            self(context, attrs, arg1, arg2, arg3)
-        })
-    }
+                    let arg1 = A::from_values(&mut args)?;
+                    let arg2 = B::from_values(&mut args)?;
+                    let arg3 = C::from_values(&mut args)?;
+
+                    self(context, attrs, arg1, arg2, arg3).map($ret_map)
+                })
+            }
+        }
+    };
 }
 
-impl<A, B, C, D, Context, Value, Func> ToFunction<Context, Value, (A, B, C, D)> for Func
-where
-    A: for<'a> Argument<'a, Value>,
-    B: for<'a> Argument<'a, Value>,
-    C: for<'a> Argument<'a, Value>,
-    D: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A, B, C, D) -> Result<Option<Value>> + 'static,
-{
-    fn to_function(self) -> Function<Context, Value> {
-        Box::new(move |context, attrs, args| {
-            let mut args = args.into_iter();
+impl_func_args_3!((), |_| None);
+impl_func_args_3!(Option<Value>, |x| x);
 
-            let arg1 = A::from_values(&mut args)?;
-            let arg2 = B::from_values(&mut args)?;
-            let arg3 = C::from_values(&mut args)?;
-            let arg4 = D::from_values(&mut args)?;
+macro_rules! impl_func_args_4 {
+    ($ret:ty, $ret_map:expr) => {
+        impl<A, B, C, D, Context, Value, Func> ToFunction<Context, Value, (A, B, C, D, $ret)>
+            for Func
+        where
+            A: for<'a> Argument<'a, Value>,
+            B: for<'a> Argument<'a, Value>,
+            C: for<'a> Argument<'a, Value>,
+            D: for<'a> Argument<'a, Value>,
+            Func: Fn(&mut Context, Attrs, A, B, C, D) -> Result<$ret> + 'static,
+        {
+            fn to_function(self) -> Function<Context, Value> {
+                Box::new(move |context, attrs, args| {
+                    let mut args = args.into_iter();
 
-            self(context, attrs, arg1, arg2, arg3, arg4)
-        })
-    }
+                    let arg1 = A::from_values(&mut args)?;
+                    let arg2 = B::from_values(&mut args)?;
+                    let arg3 = C::from_values(&mut args)?;
+                    let arg4 = D::from_values(&mut args)?;
+
+                    self(context, attrs, arg1, arg2, arg3, arg4).map($ret_map)
+                })
+            }
+        }
+    };
 }
+
+impl_func_args_4!((), |_| None);
+impl_func_args_4!(Option<Value>, |x| x);
