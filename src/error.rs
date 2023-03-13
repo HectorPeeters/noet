@@ -1,15 +1,22 @@
+use std::fmt::{Display, Formatter};
+
 use crate::lexer::Span;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
-    #[error("Parse error: {0}")]
     Parse(String, Option<Span>),
-
-    #[error("Type error: {0}")]
     Type(String, Option<Span>),
-
-    #[error("Evaluation error: {0}")]
     Eval(String, Option<Span>),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::Parse(message, _span) => write!(f, "Parse error: {message}"),
+            Error::Type(message, _span) => write!(f, "Type error: {message}"),
+            Error::Eval(message, _span) => write!(f, "Eval error: {message}"),
+        }
+    }
 }
