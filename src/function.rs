@@ -41,3 +41,47 @@ where
         })
     }
 }
+
+impl<A, B, C, Context, Value, Func> ToFunction<Context, Value, (A, B, C)> for Func
+where
+    A: for<'a> Argument<'a, Value>,
+    B: for<'a> Argument<'a, Value>,
+    C: for<'a> Argument<'a, Value>,
+    Func: Fn(&mut Context, Attrs, A, B, C) -> Option<Value> + 'static,
+{
+    fn to_function(self) -> Function<Context, Value> {
+        Box::new(move |context, attrs, args| {
+            let mut args = args.iter();
+
+            // TODO: get rid of unwrap
+            let arg1 = A::from_values(&mut args).unwrap();
+            let arg2 = B::from_values(&mut args).unwrap();
+            let arg3 = C::from_values(&mut args).unwrap();
+
+            self(context, attrs, arg1, arg2, arg3)
+        })
+    }
+}
+
+impl<A, B, C, D, Context, Value, Func> ToFunction<Context, Value, (A, B, C, D)> for Func
+where
+    A: for<'a> Argument<'a, Value>,
+    B: for<'a> Argument<'a, Value>,
+    C: for<'a> Argument<'a, Value>,
+    D: for<'a> Argument<'a, Value>,
+    Func: Fn(&mut Context, Attrs, A, B, C, D) -> Option<Value> + 'static,
+{
+    fn to_function(self) -> Function<Context, Value> {
+        Box::new(move |context, attrs, args| {
+            let mut args = args.iter();
+
+            // TODO: get rid of unwrap
+            let arg1 = A::from_values(&mut args).unwrap();
+            let arg2 = B::from_values(&mut args).unwrap();
+            let arg3 = C::from_values(&mut args).unwrap();
+            let arg4 = D::from_values(&mut args).unwrap();
+
+            self(context, attrs, arg1, arg2, arg3, arg4)
+        })
+    }
+}
