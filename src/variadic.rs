@@ -14,7 +14,7 @@ impl<'input, Value: 'input, T> Argument<'input, Value> for Variadic<T>
 where
     T: Argument<'input, Value>,
 {
-    fn from_value(value: &Value) -> Result<Self> {
+    fn from_value(value: Value) -> Result<Self> {
         Ok(Variadic {
             inner: vec![T::from_value(value)?],
         })
@@ -22,7 +22,7 @@ where
 
     fn from_values<I>(values: &mut I) -> Result<Self>
     where
-        I: Iterator<Item = &'input Value>,
+        I: Iterator<Item = Value>,
     {
         Ok(Variadic {
             inner: values

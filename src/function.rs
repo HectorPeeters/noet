@@ -14,7 +14,7 @@ where
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
-            let mut args = args.iter();
+            let mut args = args.into_iter();
 
             let arg = A::from_values(&mut args)?;
 
@@ -31,7 +31,7 @@ where
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
-            let mut args = args.iter();
+            let mut args = args.into_iter();
 
             let arg1 = A::from_values(&mut args)?;
             let arg2 = B::from_values(&mut args)?;
@@ -50,7 +50,7 @@ where
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
-            let mut args = args.iter();
+            let mut args = args.into_iter();
 
             let arg1 = A::from_values(&mut args)?;
             let arg2 = B::from_values(&mut args)?;
@@ -71,7 +71,7 @@ where
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
-            let mut args = args.iter();
+            let mut args = args.into_iter();
 
             let arg1 = A::from_values(&mut args)?;
             let arg2 = B::from_values(&mut args)?;

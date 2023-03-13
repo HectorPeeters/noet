@@ -4,7 +4,7 @@ use noet::{
     variadic::Variadic,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum CustomValue {
     Text(String),
     Empty(),
@@ -28,15 +28,15 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
 impl<'input> Value<'input> for CustomValue {}
 
 impl<'a> Argument<'a, CustomValue> for String {
-    fn from_value(value: &CustomValue) -> Result<Self> {
+    fn from_value(value: CustomValue) -> Result<Self> {
         match value {
             CustomValue::Text(t) => Ok(t.to_string()),
-            CustomValue::Block(elems) => {
+            CustomValue::Block(mut elems) => {
                 if elems.len() != 1 {
                     panic!();
                 }
 
-                Argument::from_value(&elems[0])
+                Argument::from_value(elems.remove(0))
             }
             _ => unreachable!(),
         }
