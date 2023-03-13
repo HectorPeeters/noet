@@ -41,10 +41,12 @@ where
 
     fn evaluate_element(&mut self, element: ParsedElement<'input>) -> Result<Option<V>> {
         match element {
+            ParsedElement::HardLinebreak() => Ok(V::LINEBREAK),
+            ParsedElement::Text(t) => Ok(V::from_text_element(t)),
             ParsedElement::Function(name, attributes, arguments) => {
                 self.evaluate_function(name, attributes, arguments)
             }
-            _ => Ok(Some(V::from(element))),
+            _ => Ok(Some(element.into())),
         }
     }
 

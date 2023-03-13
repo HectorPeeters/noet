@@ -25,7 +25,13 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
     }
 }
 
-impl<'input> Value<'input> for CustomValue {}
+impl<'input> Value<'input> for CustomValue {
+    const LINEBREAK: Option<Self> = Some(CustomValue::Linebreak());
+
+    fn from_text_element(text: &'input str) -> Option<Self> {
+        Some(Self::Text(text.to_string()))
+    }
+}
 
 #[derive(Default)]
 pub struct CustomContext {

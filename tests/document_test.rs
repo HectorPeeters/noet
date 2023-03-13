@@ -27,7 +27,13 @@ impl<'input> From<ParsedElement<'input>> for Element {
     }
 }
 
-impl<'input> Value<'input> for Element {}
+impl<'input> Value<'input> for Element {
+    const LINEBREAK: Option<Self> = Some(Element::Linebreak());
+
+    fn from_text_element(text: &'input str) -> Option<Self> {
+        Some(Self::Text(text.to_string()))
+    }
+}
 
 #[derive(Default)]
 pub struct Note {
