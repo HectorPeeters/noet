@@ -30,9 +30,9 @@ impl<'input> From<ParsedElement<'input>> for Element {
 impl<'input> Value<'input> for Element {}
 
 impl<'a> Argument<'a, Element> for String {
-    fn from_value(value: &Element) -> Self {
+    fn from_value(value: &Element) -> Result<Self> {
         match value {
-            Element::Text(t) => t.to_string(),
+            Element::Text(t) => Ok(t.to_string()),
             Element::Block(elems) => {
                 if elems.len() != 1 {
                     panic!();

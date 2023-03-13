@@ -28,9 +28,9 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
 impl<'input> Value<'input> for CustomValue {}
 
 impl<'a> Argument<'a, CustomValue> for String {
-    fn from_value(value: &CustomValue) -> Self {
+    fn from_value(value: &CustomValue) -> Result<Self> {
         match value {
-            CustomValue::Text(t) => t.to_string(),
+            CustomValue::Text(t) => Ok(t.to_string()),
             CustomValue::Block(elems) => {
                 if elems.len() != 1 {
                     panic!();
