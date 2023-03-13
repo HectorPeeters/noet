@@ -97,6 +97,24 @@ impl<'input, C, V> Argument<'input, C, V> for &'input str {
     }
 }
 
+impl<'input, C, V> Argument<'input, C, V> for bool {
+    fn from_element(
+        _evaluator: &Evaluator<C, V>,
+        _context: &mut C,
+        element: ParsedElement<'input>,
+    ) -> Result<Self> {
+        match element {
+            ParsedElement::Text(text) => text.parse().map_err(|_| {
+                Error::Type(
+                    format!("Failed to convert '{text}' to bool in argument"),
+                    None,
+                )
+            }),
+            _ => panic!(),
+        }
+    }
+}
+
 macro_rules! impl_numeric {
     ($typ:ty) => {
         impl<'context, 'input, C, V> Argument<'input, C, V> for $typ {
