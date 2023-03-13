@@ -1,6 +1,7 @@
-use crate::{argument::Argument, attribute::Attrs};
+use crate::{argument::Argument, attribute::Attrs, error::Result};
 
-pub type Function<Context, Value> = Box<dyn Fn(&mut Context, Attrs, Vec<Value>) -> Option<Value>>;
+pub type Function<Context, Value> =
+    Box<dyn Fn(&mut Context, Attrs, Vec<Value>) -> Result<Option<Value>>>;
 
 pub trait ToFunction<Context, Value, Args> {
     fn to_function(self) -> Function<Context, Value>;
@@ -9,7 +10,7 @@ pub trait ToFunction<Context, Value, Args> {
 impl<A, Context, Value, Func> ToFunction<Context, Value, (A,)> for Func
 where
     A: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A) -> Option<Value> + 'static,
+    Func: Fn(&mut Context, Attrs, A) -> Result<Option<Value>> + 'static,
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
@@ -27,7 +28,7 @@ impl<A, B, Context, Value, Func> ToFunction<Context, Value, (A, B)> for Func
 where
     A: for<'a> Argument<'a, Value>,
     B: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A, B) -> Option<Value> + 'static,
+    Func: Fn(&mut Context, Attrs, A, B) -> Result<Option<Value>> + 'static,
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
@@ -47,7 +48,7 @@ where
     A: for<'a> Argument<'a, Value>,
     B: for<'a> Argument<'a, Value>,
     C: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A, B, C) -> Option<Value> + 'static,
+    Func: Fn(&mut Context, Attrs, A, B, C) -> Result<Option<Value>> + 'static,
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
@@ -69,7 +70,7 @@ where
     B: for<'a> Argument<'a, Value>,
     C: for<'a> Argument<'a, Value>,
     D: for<'a> Argument<'a, Value>,
-    Func: Fn(&mut Context, Attrs, A, B, C, D) -> Option<Value> + 'static,
+    Func: Fn(&mut Context, Attrs, A, B, C, D) -> Result<Option<Value>> + 'static,
 {
     fn to_function(self) -> Function<Context, Value> {
         Box::new(move |context, attrs, args| {
