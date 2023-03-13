@@ -1,6 +1,7 @@
 use noet::{
     argument::Argument, attribute::Attrs, context::Context, evaluator::Evaluator,
     parse_tree::ParsedElement, parser::Parser, registry::FunctionRegistry, value::Value,
+    variadic::Variadic,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -44,7 +45,7 @@ impl Context<CustomValue> for CustomContext {
         registry.register_function(func_test, "test");
         registry.register_function(func_attr, "attr");
         registry.register_function(func_flag_attr, "flag-attr");
-        //        registry.register_function(func_variadic, "variadic");
+        registry.register_function(func_variadic, "variadic");
     }
 }
 
@@ -67,10 +68,14 @@ fn func_flag_attr(
     None
 }
 
-// fn func_variadic(context: &mut CustomContext, args: Variadic<String>) -> Option<CustomValue> {
-//     context.variadic_values = args.into_inner();
-//     None
-// }
+fn func_variadic(
+    context: &mut CustomContext,
+    _attrs: &Attrs,
+    args: Variadic<String>,
+) -> Option<CustomValue> {
+    context.variadic_values = args.into();
+    None
+}
 
 #[test]
 fn evaluate_text() {
@@ -123,33 +128,33 @@ fn evaluate_single_flag_attribute_function() {
     assert!(context.flag_export);
 }
 
-// #[test]
-// fn evaluate_single_flag_attribute_function_not_present() {
-//     let mut context = CustomContext::default();
-//
-//     let document = parser::note("[#flag-attr]").unwrap();
-//
-//     let mut evaluator = Evaluator::new(&mut context);
-//     evaluator.evaluate_document(document);
-//
-//     assert!(!context.flag_export);
-// }
-//
-// #[test]
-// fn evaluate_variadic() {
-//     let mut context = CustomContext::default();
-//
-//     let document = parser::note("[#variadic first | second | third]").unwrap();
-//
-//     let mut evaluator = Evaluator::new(&mut context);
-//     evaluator.evaluate_document(document);
-//
-//     assert_eq!(
-//         context.variadic_values,
-//         vec![
-//             "first".to_string(),
-//             "second".to_string(),
-//             "third".to_string()
-//         ]
-//     );
-// }
+#[test]
+fn evaluate_single_flag_attribute_function_not_present() {
+    let mut context = CustomContext::default();
+
+    let parser = Parser::new("[#flag-attr Some text]");
+
+    let mut evaluator = Evaluator::new(&mut context);
+    evaluator.evaluate_document(parser);
+
+    assert!(!context.flag_export);
+}
+
+#[test]
+fn evaluate_variadic() {
+    let mut context = CustomContext::default();
+
+    let parser = Parser::new("[#variadic first | second | third]");
+
+    let mut evaluator = Evaluator::new(&mut context);
+    evaluator.evaluate_document(parser);
+
+    assert_eq!(
+        context.variadic_values,
+        vec![
+            "first".to_string(),
+            "second".to_string(),
+            "third".to_string()
+        ]
+    );
+}

@@ -12,3 +12,4 @@ pub mod parse_tree;
 pub mod parser;
 pub mod registry;
 pub mod value;
+pub mod variadic;

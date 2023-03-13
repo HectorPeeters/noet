@@ -115,7 +115,7 @@ impl<'input> Parser<'input> {
                     panic!("Value of attribute should be a string");
                 }
             }
-            x => panic!("Unexpected token while parsing attribute {:?}", x),
+            x => panic!("Unexpected token while parsing attribute {x:?}"),
         }
     }
 
