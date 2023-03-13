@@ -35,7 +35,6 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    #[must_use]
     fn consume_expect(&mut self, token_type: TokenType) -> Result<Token> {
         let token = self.consume();
 
@@ -127,7 +126,7 @@ impl<'input> Parser<'input> {
                     Ok(Attribute::new_value(key_str, value))
                 } else {
                     Err(Error::Parse(
-                        format!("Value of attribute should be a string"),
+                        "Value of attribute should be a string".to_string(),
                         Some(self.get_span()),
                     ))
                 }
@@ -187,13 +186,11 @@ impl<'input> Parser<'input> {
 
             if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
                 self.consume_expect(TokenType::ArgumentSeparator)?;
-            } else {
-                if self.peek_type() != Some(TokenType::RightBracket) {
-                    return Err(Error::Parse(
-                        "Expected RightBracket at the end of function arguments".to_string(),
-                        None,
-                    ));
-                }
+            } else if self.peek_type() != Some(TokenType::RightBracket) {
+                return Err(Error::Parse(
+                    "Expected RightBracket at the end of function arguments".to_string(),
+                    None,
+                ));
             }
         }
 
