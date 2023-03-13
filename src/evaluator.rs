@@ -40,7 +40,7 @@ where
         let attrs = Attrs::new(attributes);
 
         match self.function_registry.get(name) {
-            Some(func) => func(self.context, &attrs, &evaluated_arguments),
+            Some(func) => func(self.context, attrs, evaluated_arguments),
             None => panic!("Function '{name}' not found"),
         }
     }

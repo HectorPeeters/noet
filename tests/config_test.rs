@@ -60,19 +60,19 @@ impl Context<CustomValue> for CustomContext {
     }
 }
 
-fn func_test(context: &mut CustomContext, _attrs: &Attrs, value: String) -> Option<CustomValue> {
+fn func_test(context: &mut CustomContext, _attrs: Attrs, value: String) -> Option<CustomValue> {
     context.value = value;
     None
 }
 
-fn func_attr(context: &mut CustomContext, attrs: &Attrs, _value: String) -> Option<CustomValue> {
+fn func_attr(context: &mut CustomContext, attrs: Attrs, _value: String) -> Option<CustomValue> {
     context.flag_lang = attrs.get_value("lang");
     None
 }
 
 fn func_flag_attr(
     context: &mut CustomContext,
-    attrs: &Attrs,
+    attrs: Attrs,
     _value: String,
 ) -> Option<CustomValue> {
     context.flag_export = attrs.has_flag("export");
@@ -81,7 +81,7 @@ fn func_flag_attr(
 
 fn func_variadic(
     context: &mut CustomContext,
-    _attrs: &Attrs,
+    _attrs: Attrs,
     args: Variadic<String>,
 ) -> Option<CustomValue> {
     context.variadic_values = args.into();
