@@ -2,6 +2,7 @@ use std::iter::Peekable;
 
 use crate::{
     attribute::Attribute,
+    error::{Error, Result},
     lexer::{Lexer, Span, Token, TokenType},
     parse_tree::ParsedElement,
 };
@@ -34,19 +35,32 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    fn consume_expect(&mut self, token_type: TokenType) -> Token {
+    #[must_use]
+    fn consume_expect(&mut self, token_type: TokenType) -> Result<Token> {
         let token = self.consume();
-        if let Some(token) = token && token.token_type == token_type {
-            return token;
+
+        let Some(token) = token else {
+            return Err(Error::Parse("Reached EOF".to_string(), None));
+        };
+
+        if token.token_type != token_type {
+            return Err(Error::Parse(
+                format!(
+                    "Expected token {:?} but got {:?}",
+                    token_type, token.token_type
+                ),
+                Some(token.span),
+            ));
         }
 
-        panic!("Expected token of type {token_type:?}");
+        Ok(token)
     }
 
     #[inline]
     fn skip_whitespace(&mut self) {
+        // NOTE: unwrapping here is allowed as we first check the next token type before consuming
         while self.peek_type() == Some(TokenType::Whitespace) {
-            self.consume_expect(TokenType::Whitespace);
+            self.consume_expect(TokenType::Whitespace).unwrap();
         }
     }
 
@@ -92,30 +106,36 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    fn attribute(&mut self) -> Attribute<'input> {
-        let key = self.consume_expect(TokenType::AttributeIdentifier);
+    fn attribute(&mut self) -> Result<Attribute<'input>> {
+        let key = self.consume_expect(TokenType::AttributeIdentifier)?;
         let key_str = &self.input[key.span].trim_start_matches(|c| c == '@');
 
         match self.peek_type() {
             Some(TokenType::Whitespace) | Some(TokenType::RightBracket) => {
-                Attribute::new_flag(key_str)
+                Ok(Attribute::new_flag(key_str))
             }
             Some(TokenType::LeftParen) => {
-                self.consume_expect(TokenType::LeftParen);
+                self.consume_expect(TokenType::LeftParen)?;
 
                 self.start_span();
 
                 let value_element = self.text(false);
 
-                self.consume_expect(TokenType::RightParen);
+                self.consume_expect(TokenType::RightParen)?;
 
                 if let ParsedElement::Text(value) = value_element {
-                    Attribute::new_value(key_str, value)
+                    Ok(Attribute::new_value(key_str, value))
                 } else {
-                    panic!("Value of attribute should be a string");
+                    Err(Error::Parse(
+                        format!("Value of attribute should be a string"),
+                        Some(self.get_span()),
+                    ))
                 }
             }
-            x => panic!("Unexpected token while parsing attribute {x:?}"),
+            x => Err(Error::Parse(
+                format!("Unexpected token while parsing attribute {x:?}"),
+                Some(self.get_span()),
+            )),
         }
     }
 
@@ -138,8 +158,8 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    fn function(&mut self) -> ParsedElement<'input> {
-        let identifier = self.consume_expect(TokenType::FunctionIdentifier);
+    fn function(&mut self) -> Result<ParsedElement<'input>> {
+        let identifier = self.consume_expect(TokenType::FunctionIdentifier)?;
 
         self.skip_whitespace();
 
@@ -147,16 +167,16 @@ impl<'input> Parser<'input> {
         let mut arguments = vec![];
 
         while self.peek_type() == Some(TokenType::AttributeIdentifier) {
-            attributes.push(self.attribute());
+            attributes.push(self.attribute()?);
             self.skip_whitespace();
         }
 
         if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
-            self.consume_expect(TokenType::ArgumentSeparator);
+            self.consume_expect(TokenType::ArgumentSeparator)?;
         }
 
         while self.peek_type() != Some(TokenType::RightBracket) {
-            let mut argument = self.block();
+            let mut argument = self.block()?;
             Self::trim_argument(&mut argument);
 
             if argument.len() == 1 {
@@ -166,25 +186,30 @@ impl<'input> Parser<'input> {
             }
 
             if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
-                self.consume_expect(TokenType::ArgumentSeparator);
+                self.consume_expect(TokenType::ArgumentSeparator)?;
             } else {
-                // TODO: peek_type() should return a RightBracket
+                if self.peek_type() != Some(TokenType::RightBracket) {
+                    return Err(Error::Parse(
+                        "Expected RightBracket at the end of function arguments".to_string(),
+                        None,
+                    ));
+                }
             }
         }
 
-        self.consume_expect(TokenType::RightBracket);
+        self.consume_expect(TokenType::RightBracket)?;
 
         let _span = self.get_span();
 
-        ParsedElement::Function(
+        Ok(ParsedElement::Function(
             self.input[identifier.span].trim_start_matches(|c| c == '#'),
             attributes,
             arguments,
-        )
+        ))
     }
 
     #[inline]
-    fn block(&mut self) -> Vec<ParsedElement<'input>> {
+    fn block(&mut self) -> Result<Vec<ParsedElement<'input>>> {
         let mut elements = vec![];
 
         loop {
@@ -197,16 +222,16 @@ impl<'input> Parser<'input> {
                 | TokenType::ArgumentSeparator
                 | TokenType::RightBracket => break,
                 _ => match self.element() {
-                    Some(e) => elements.push(e),
+                    Some(e) => elements.push(e?),
                     None => break,
                 },
             }
         }
 
-        elements
+        Ok(elements)
     }
 
-    fn element(&mut self) -> Option<ParsedElement<'input>> {
+    fn element(&mut self) -> Option<Result<ParsedElement<'input>>> {
         self.start_span();
 
         let Some(token) = self.consume() else {
@@ -214,9 +239,9 @@ impl<'input> Parser<'input> {
         };
 
         match token.token_type {
-            TokenType::Text | TokenType::Whitespace => Some(self.text(false)),
-            TokenType::LeftParen => Some(self.text(true)),
-            TokenType::HardLinebreak => Some(ParsedElement::HardLinebreak()),
+            TokenType::Text | TokenType::Whitespace => Some(Ok(self.text(false))),
+            TokenType::LeftParen => Some(Ok(self.text(true))),
+            TokenType::HardLinebreak => Some(Ok(ParsedElement::HardLinebreak())),
             TokenType::LeftBracket => Some(self.function()),
             TokenType::RightBracket => todo!(),
             TokenType::RightParen => todo!(),
@@ -229,7 +254,7 @@ impl<'input> Parser<'input> {
 }
 
 impl<'input> Iterator for Parser<'input> {
-    type Item = ParsedElement<'input>;
+    type Item = Result<ParsedElement<'input>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.element()
@@ -246,7 +271,7 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Text("This is some simple text."))
+            Some(Ok(ParsedElement::Text("This is some simple text.")))
         );
         assert!(parser.next().is_none());
     }
@@ -257,7 +282,7 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Text("This is some (simple) text."))
+            Some(Ok(ParsedElement::Text("This is some (simple) text.")))
         );
         assert!(parser.next().is_none());
     }
@@ -266,7 +291,7 @@ mod tests {
     fn matching_paren_start_text() {
         let mut parser = Parser::new("(simple)");
 
-        assert_eq!(parser.next(), Some(ParsedElement::Text("(simple)")));
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::Text("(simple)"))));
         assert!(parser.next().is_none());
     }
 
@@ -276,12 +301,12 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Text("This is some simple text."))
+            Some(Ok(ParsedElement::Text("This is some simple text.")))
         );
-        assert_eq!(parser.next(), Some(ParsedElement::HardLinebreak()));
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::HardLinebreak())));
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Text("And this is a new paragraph."))
+            Some(Ok(ParsedElement::Text("And this is a new paragraph.")))
         );
         assert!(parser.next().is_none());
     }
@@ -292,11 +317,11 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Function(
+            Some(Ok(ParsedElement::Function(
                 "test",
                 vec![],
                 vec![ParsedElement::Text("first"), ParsedElement::Text("second")]
-            ))
+            )))
         );
         assert!(parser.next().is_none());
     }
@@ -307,23 +332,23 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Function(
+            Some(Ok(ParsedElement::Function(
                 "title",
                 vec![],
                 vec![ParsedElement::Text("Test Document"),]
-            ))
+            )))
         );
-        assert_eq!(parser.next(), Some(ParsedElement::Text("\n")));
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::Text("\n"))));
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Function(
+            Some(Ok(ParsedElement::Function(
                 "authors",
                 vec![],
                 vec![
                     ParsedElement::Text("John Doe"),
                     ParsedElement::Text("Jane Doe")
                 ]
-            ))
+            )))
         );
         assert!(parser.next().is_none());
     }
@@ -334,14 +359,14 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Function(
+            Some(Ok(ParsedElement::Function(
                 "test",
                 vec![
                     Attribute::new_flag("abc"),
                     Attribute::new_value("def", "ghi")
                 ],
                 vec![ParsedElement::Text("first"), ParsedElement::Text("second")]
-            ))
+            )))
         );
         assert!(parser.next().is_none());
     }
@@ -354,7 +379,7 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Function(
+            Some(Ok(ParsedElement::Function(
                 "quote",
                 vec![],
                 vec![ParsedElement::Block(vec![
@@ -362,7 +387,7 @@ mod tests {
                     ParsedElement::HardLinebreak(),
                     ParsedElement::Text("Spread over multiple paragraphs.\nBecause edgecases!"),
                 ])]
-            ))
+            )))
         );
         assert!(parser.next().is_none());
     }
@@ -373,7 +398,7 @@ mod tests {
 
         assert_eq!(
             parser.next(),
-            Some(ParsedElement::Function(
+            Some(Ok(ParsedElement::Function(
                 "list",
                 vec![],
                 vec![
@@ -384,7 +409,7 @@ mod tests {
                     ),
                     ParsedElement::Function("mi", vec![], vec![ParsedElement::Text("(M\\;N)")])
                 ]
-            ))
+            )))
         );
         assert!(parser.next().is_none());
     }

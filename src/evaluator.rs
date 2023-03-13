@@ -1,6 +1,7 @@
 use crate::{
     attribute::{Attribute, Attrs},
     context::Context,
+    error::Result,
     parse_tree::ParsedElement,
     registry::FunctionRegistry,
     value::Value,
@@ -31,33 +32,42 @@ where
         name: &'input str,
         attributes: Vec<Attribute<'input>>,
         arguments: Vec<ParsedElement<'input>>,
-    ) -> Option<V> {
-        let evaluated_arguments = arguments
-            .into_iter()
-            .filter_map(|a| self.evaluate_element(a))
-            .collect::<Vec<_>>();
+    ) -> Result<Option<V>> {
+        let mut evaluated_arguments = vec![];
+        for arg in arguments {
+            if let Some(evaluated_arg) = self.evaluate_element(arg)? {
+                evaluated_arguments.push(evaluated_arg);
+            }
+        }
 
         let attrs = Attrs::new(attributes);
 
         match self.function_registry.get(name) {
-            Some(func) => func(self.context, attrs, evaluated_arguments),
+            Some(func) => Ok(func(self.context, attrs, evaluated_arguments)),
             None => panic!("Function '{name}' not found"),
         }
     }
 
-    fn evaluate_element(&mut self, element: ParsedElement<'input>) -> Option<V> {
+    fn evaluate_element(&mut self, element: ParsedElement<'input>) -> Result<Option<V>> {
         match element {
             ParsedElement::Function(name, attributes, arguments) => {
                 self.evaluate_function(name, attributes, arguments)
             }
-            _ => Some(V::from(element)),
+            _ => Ok(Some(V::from(element))),
         }
     }
 
-    pub fn evaluate_document<I>(&mut self, document: I) -> Vec<V>
+    pub fn evaluate_document<I>(&mut self, document: I) -> Result<Vec<V>>
     where
-        I: Iterator<Item = ParsedElement<'input>>,
+        I: Iterator<Item = Result<ParsedElement<'input>>>,
     {
-        document.filter_map(|e| self.evaluate_element(e)).collect()
+        let mut evaluated_elements = vec![];
+        for element in document {
+            if let Some(evaluated_element) = self.evaluate_element(element?)? {
+                evaluated_elements.push(evaluated_element);
+            }
+        }
+
+        Ok(evaluated_elements)
     }
 }

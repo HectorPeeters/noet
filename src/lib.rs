@@ -5,6 +5,7 @@
 pub mod argument;
 pub mod attribute;
 pub mod context;
+pub mod error;
 pub mod evaluator;
 pub mod function;
 pub mod lexer;

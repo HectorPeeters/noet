@@ -1,5 +1,5 @@
 use noet::{
-    argument::Argument, attribute::Attrs, context::Context, evaluator::Evaluator,
+    argument::Argument, attribute::Attrs, context::Context, error::Result, evaluator::Evaluator,
     parse_tree::ParsedElement, parser::Parser, registry::FunctionRegistry, value::Value,
     variadic::Variadic,
 };
@@ -80,19 +80,19 @@ fn func_table(_context: &mut Note, attrs: Attrs, items: Variadic<Element>) -> Op
     ))
 }
 
-fn parse_document(doc: &str) -> (Note, Vec<Element>) {
+fn parse_document(doc: &str) -> Result<(Note, Vec<Element>)> {
     let parser = Parser::new(doc);
 
     let mut context = Note::default();
 
     let mut evaluator = Evaluator::new(&mut context);
-    let evaluated = evaluator.evaluate_document(parser);
+    let evaluated = evaluator.evaluate_document(parser)?;
 
-    (context, evaluated)
+    Ok((context, evaluated))
 }
 
 #[test]
-fn full_document() {
+fn full_document() -> Result<()> {
     let source = r#"[#title This is some document]
 
 It contains a [#b first] paragraph and supports lists.
@@ -112,7 +112,7 @@ It also supports tables!
 | Pear | 9
 ]"#;
 
-    let (context, elements) = parse_document(source);
+    let (context, elements) = parse_document(source)?;
 
     assert_eq!(context.title, Some("This is some document".to_string()));
     assert_eq!(
@@ -147,4 +147,6 @@ It also supports tables!
             )
         ]
     );
+
+    Ok(())
 }
