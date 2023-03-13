@@ -27,7 +27,9 @@ impl<'input> Attrs<'input> {
     }
 
     pub fn has_flag(&self, key: &str) -> bool {
-        self.values.iter().find(|x| x.key == key).is_some()
+        self.values
+            .iter()
+            .any(|x| x.key == key && x.value.is_none())
     }
 
     pub fn get_value(&self, key: &str) -> Option<&'input str> {

@@ -23,7 +23,7 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
 impl<'input> Value<'input> for CustomValue {}
 
 impl<'a> Argument<'a, CustomValue> for String {
-    fn from_block(value: &'a Vec<CustomValue>) -> Option<Self> {
+    fn from_block(value: &'a [CustomValue]) -> Option<Self> {
         match &value[0] {
             CustomValue::Text(t) => Some(t.to_string()),
             _ => unreachable!(),
@@ -48,12 +48,12 @@ impl Context<CustomValue> for CustomContext {
     }
 }
 
-fn func_test(context: &mut CustomContext, attrs: &Attrs, value: String) -> Option<CustomValue> {
+fn func_test(context: &mut CustomContext, _attrs: &Attrs, value: String) -> Option<CustomValue> {
     context.value = value;
     None
 }
 
-fn func_attr(context: &mut CustomContext, attrs: &Attrs, value: String) -> Option<CustomValue> {
+fn func_attr(context: &mut CustomContext, attrs: &Attrs, _value: String) -> Option<CustomValue> {
     context.flag_lang = attrs.get_value("lang").map(|x| x.to_string());
     None
 }
