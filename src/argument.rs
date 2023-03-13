@@ -39,7 +39,7 @@ where
     }
 }
 
-impl<'context, 'input, C, V> Argument<'input, C, V> for V
+impl<'input, C, V> Argument<'input, C, V> for V
 where
     V: Value<'input>,
     C: Context<V>,
@@ -54,7 +54,7 @@ where
     }
 }
 
-impl<'context, 'input, C, V> Argument<'input, C, V> for ParsedElement<'input> {
+impl<'input, C, V> Argument<'input, C, V> for ParsedElement<'input> {
     fn from_element(
         _evaluator: &Evaluator<C, V>,
         _context: &mut C,
@@ -64,7 +64,7 @@ impl<'context, 'input, C, V> Argument<'input, C, V> for ParsedElement<'input> {
     }
 }
 
-impl<'context, 'input, C, V> Argument<'input, C, V> for String {
+impl<'input, C, V> Argument<'input, C, V> for String {
     fn from_element(
         _evaluator: &Evaluator<C, V>,
         _context: &mut C,
@@ -77,7 +77,7 @@ impl<'context, 'input, C, V> Argument<'input, C, V> for String {
     }
 }
 
-impl<'context, 'input, C, V> Argument<'input, C, V> for &'input str {
+impl<'input, C, V> Argument<'input, C, V> for &'input str {
     fn from_element(
         _evaluator: &Evaluator<C, V>,
         _context: &mut C,

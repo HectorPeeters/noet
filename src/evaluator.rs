@@ -11,6 +11,16 @@ pub struct Evaluator<Context, Value> {
     function_registry: FunctionRegistry<Context, Value>,
 }
 
+impl<'input, C, V> Default for Evaluator<C, V>
+where
+    C: Context<V>,
+    V: Value<'input>,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'input, C, V> Evaluator<C, V>
 where
     C: Context<V>,
@@ -22,10 +32,15 @@ where
 
         Self { function_registry }
     }
+}
 
+impl<'input, Context, V> Evaluator<Context, V>
+where
+    V: Value<'input>,
+{
     fn evaluate_function(
         &self,
-        context: &mut C,
+        context: &mut Context,
         name: &'input str,
         attributes: Vec<Attribute<'input>>,
         arguments: Vec<ParsedElement<'input>>,
@@ -38,7 +53,7 @@ where
 
     pub fn evaluate_element(
         &self,
-        context: &mut C,
+        context: &mut Context,
         element: ParsedElement<'input>,
     ) -> Result<Option<V>> {
         match element {
@@ -51,7 +66,7 @@ where
         }
     }
 
-    pub fn evaluate_document<I>(&self, context: &mut C, document: I) -> Result<Vec<V>>
+    pub fn evaluate_document<I>(&self, context: &mut Context, document: I) -> Result<Vec<V>>
     where
         I: Iterator<Item = Result<ParsedElement<'input>>>,
     {
