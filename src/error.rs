@@ -6,4 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("Parse error: {0}")]
     Parse(String, Option<Span>),
+
+    #[error("Type error: {0}")]
+    Type(String, Option<Span>),
 }

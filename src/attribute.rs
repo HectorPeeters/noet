@@ -1,4 +1,6 @@
-use std::{fmt::Debug, str::FromStr};
+use std::{any::type_name, fmt::Debug, str::FromStr};
+
+use crate::error::{Error, Result};
 
 #[derive(Debug, PartialEq)]
 pub struct Attribute<'input> {
@@ -34,7 +36,7 @@ impl<'input> Attrs<'input> {
             .any(|x| x.key == key && x.value.is_none())
     }
 
-    pub fn get_value<T>(&self, key: &str) -> Option<T>
+    pub fn get_value<T>(&self, key: &str) -> Result<Option<T>>
     where
         T: FromStr,
         T::Err: Debug,
@@ -43,6 +45,18 @@ impl<'input> Attrs<'input> {
             .iter()
             .find(|x| x.key == key)
             .and_then(|x| x.value)
-            .map(|x| x.parse().unwrap())
+            .map(|x| {
+                x.parse().map_err(|_| {
+                    Error::Type(
+                        format!(
+                            "Failed to convert attribute value '{}' to {}",
+                            x,
+                            type_name::<T>()
+                        ),
+                        None,
+                    )
+                })
+            })
+            .transpose()
     }
 }
