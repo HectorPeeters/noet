@@ -49,8 +49,15 @@ where
         context: &mut C,
         element: ParsedElement<'input>,
     ) -> Result<Self> {
-        // TODO: get rid of this unwrap
-        Ok(evaluator.evaluate_element(context, element)?.unwrap())
+        evaluator
+            .evaluate_element(context, element)?
+            .ok_or(Error::Eval(
+                format!(
+                    "Evaluating argument of type {} did not result in a value",
+                    type_name::<V>()
+                ),
+                None,
+            ))
     }
 }
 
