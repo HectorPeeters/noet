@@ -83,8 +83,8 @@ fn evaluate_text() -> Result<()> {
 
     let parser = Parser::new("This is some simple text.");
 
-    let mut evaluator = Evaluator::new(&mut context);
-    let evaluated_document = evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    let evaluated_document = evaluator.evaluate_document(&mut context, parser)?;
 
     assert_eq!(
         evaluated_document,
@@ -100,8 +100,8 @@ fn evaluate_single_argument_function() -> Result<()> {
 
     let parser = Parser::new("[#test test]");
 
-    let mut evaluator = Evaluator::new(&mut context);
-    evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    evaluator.evaluate_document(&mut context, parser)?;
 
     assert_eq!(context.value, "test");
 
@@ -114,8 +114,8 @@ fn evaluate_single_argument_function_numeric() -> Result<()> {
 
     let parser = Parser::new("[#version 1234]");
 
-    let mut evaluator = Evaluator::new(&mut context);
-    evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    evaluator.evaluate_document(&mut context, parser)?;
 
     assert_eq!(context.version, 1234);
 
@@ -128,8 +128,8 @@ fn evaluate_single_attribute_function() -> Result<()> {
 
     let parser = Parser::new("[#attr @lang(rust) some code]");
 
-    let mut evaluator = Evaluator::new(&mut context);
-    evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    evaluator.evaluate_document(&mut context, parser)?;
 
     assert_eq!(context.flag_lang, Some("rust".to_string()));
 
@@ -142,8 +142,8 @@ fn evaluate_single_flag_attribute_function() -> Result<()> {
 
     let parser = Parser::new("[#flag-attr @export some text]");
 
-    let mut evaluator = Evaluator::new(&mut context);
-    evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    evaluator.evaluate_document(&mut context, parser)?;
 
     assert!(context.flag_export);
 
@@ -156,8 +156,8 @@ fn evaluate_single_flag_attribute_function_not_present() -> Result<()> {
 
     let parser = Parser::new("[#flag-attr Some text]");
 
-    let mut evaluator = Evaluator::new(&mut context);
-    evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    evaluator.evaluate_document(&mut context, parser)?;
 
     assert!(!context.flag_export);
 
@@ -170,8 +170,8 @@ fn evaluate_variadic() -> Result<()> {
 
     let parser = Parser::new("[#variadic first | second | third]");
 
-    let mut evaluator = Evaluator::new(&mut context);
-    evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    evaluator.evaluate_document(&mut context, parser)?;
 
     assert_eq!(
         context.variadic_values,

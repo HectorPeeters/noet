@@ -83,8 +83,8 @@ fn parse_document(doc: &str) -> Result<(Note, Vec<Element>)> {
 
     let mut context = Note::default();
 
-    let mut evaluator = Evaluator::new(&mut context);
-    let evaluated = evaluator.evaluate_document(parser)?;
+    let evaluator = Evaluator::new();
+    let evaluated = evaluator.evaluate_document(&mut context, parser)?;
 
     Ok((context, evaluated))
 }
@@ -98,7 +98,7 @@ It contains a [#b first] paragraph and supports lists.
 [#list
 | first
 | second
-| third
+| [#b third]
 ]
 
 It also supports tables!
@@ -124,7 +124,7 @@ It also supports tables!
             Element::List(vec![
                 Element::Text("first".to_string()),
                 Element::Text("second".to_string()),
-                Element::Text("third".to_string()),
+                Element::Bold(Box::new(Element::Text("third".to_string()))),
             ]),
             Element::Linebreak(),
             Element::Text("It also supports tables!".to_string()),

@@ -1,4 +1,4 @@
-use crate::{argument::Argument, error::Result, parse_tree::ParsedElement};
+use crate::{argument::Argument, error::Result, evaluator::Evaluator, parse_tree::ParsedElement};
 
 pub struct Variadic<T> {
     inner: Vec<T>,
@@ -10,23 +10,31 @@ impl<T> From<Variadic<T>> for Vec<T> {
     }
 }
 
-impl<'input, T> Argument<'input> for Variadic<T>
+impl<'input, C, V, T> Argument<'input, C, V> for Variadic<T>
 where
-    T: Argument<'input>,
+    T: Argument<'input, C, V>,
 {
-    fn from_element(element: ParsedElement<'input>) -> Result<Self> {
+    fn from_element(
+        evaluator: &Evaluator<C, V>,
+        context: &mut C,
+        element: ParsedElement<'input>,
+    ) -> Result<Self> {
         Ok(Variadic {
-            inner: vec![T::from_element(element)?],
+            inner: vec![T::from_element(evaluator, context, element)?],
         })
     }
 
-    fn from_elements<I>(elements: &mut I) -> Result<Self>
+    fn from_elements<I>(
+        evaluator: &Evaluator<C, V>,
+        context: &mut C,
+        elements: &mut I,
+    ) -> Result<Self>
     where
         I: Iterator<Item = ParsedElement<'input>>,
     {
         Ok(Variadic {
             inner: elements
-                .map(|v| T::from_element(v))
+                .map(|v| T::from_element(evaluator, context, v))
                 .collect::<Result<Vec<_>>>()?,
         })
     }
