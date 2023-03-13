@@ -28,12 +28,12 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
 impl<'input> Value<'input> for CustomValue {}
 
 impl<'a> Argument<'a, CustomValue> for String {
-    fn from_block(value: &CustomValue) -> Option<Self> {
+    fn from_block(value: &CustomValue) -> Self {
         match value {
-            CustomValue::Text(t) => Some(t.to_string()),
+            CustomValue::Text(t) => t.to_string(),
             CustomValue::Block(elems) => {
                 if elems.len() != 1 {
-                    return None;
+                    panic!();
                 }
 
                 Argument::from_block(&elems[0])

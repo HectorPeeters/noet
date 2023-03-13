@@ -30,12 +30,12 @@ impl<'input> From<ParsedElement<'input>> for Element {
 impl<'input> Value<'input> for Element {}
 
 impl<'a> Argument<'a, Element> for String {
-    fn from_block(value: &Element) -> Option<Self> {
+    fn from_block(value: &Element) -> Self {
         match value {
-            Element::Text(t) => Some(t.to_string()),
+            Element::Text(t) => t.to_string(),
             Element::Block(elems) => {
                 if elems.len() != 1 {
-                    return None;
+                    panic!();
                 }
 
                 Argument::from_block(&elems[0])

@@ -4,13 +4,13 @@ pub trait Argument<'input, Value: 'input>
 where
     Self: Sized,
 {
-    fn from_block(value: &Value) -> Option<Self>;
+    fn from_block(value: &Value) -> Self;
 
     fn from_blocks<I>(values: &mut I) -> Option<Self>
     where
         I: Iterator<Item = &'input Value>,
     {
-        values.next().and_then(|v| Self::from_block(v))
+        values.next().map(|v| Self::from_block(v))
     }
 }
 
@@ -18,7 +18,7 @@ impl<'input, V: 'input> Argument<'input, V> for V
 where
     V: Value<'input> + Clone,
 {
-    fn from_block(value: &V) -> Option<Self> {
-        Some(value.clone())
+    fn from_block(value: &V) -> Self {
+        value.clone()
     }
 }
