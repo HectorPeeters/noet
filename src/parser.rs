@@ -84,7 +84,7 @@ impl<'input> Parser<'input> {
 
         loop {
             match self.peek_type() {
-                Some(TokenType::Text) | Some(TokenType::Whitespace) => {
+                Some(TokenType::Text | TokenType::Whitespace) => {
                     self.consume();
                 }
                 Some(TokenType::LeftParen) => {
@@ -110,7 +110,7 @@ impl<'input> Parser<'input> {
         let key_str = &self.input[key.span].trim_start_matches(|c| c == '@');
 
         match self.peek_type() {
-            Some(TokenType::Whitespace) | Some(TokenType::RightBracket) => {
+            Some(TokenType::Whitespace | TokenType::RightBracket) => {
                 Ok(Attribute::new_flag(key_str))
             }
             Some(TokenType::LeftParen) => {
