@@ -1,7 +1,6 @@
 use noet::{
-    attribute::Attrs, context::Context, error::Result, evaluator::Evaluator,
-    parse_tree::ParsedElement, parser::Parser, registry::FunctionRegistry, value::Value,
-    variadic::Variadic,
+    attribute::Attrs, context::Context, error::Result, evaluator::Evaluator, parser::Parser,
+    registry::FunctionRegistry, value::Value, variadic::Variadic,
 };
 
 #[derive(Debug, PartialEq)]
@@ -12,24 +11,15 @@ pub enum CustomValue {
     Block(Vec<CustomValue>),
 }
 
-impl<'input> From<ParsedElement<'input>> for CustomValue {
-    fn from(value: ParsedElement<'input>) -> Self {
-        match value {
-            ParsedElement::Text(t) => CustomValue::Text(t.to_string()),
-            ParsedElement::HardLinebreak() => CustomValue::Linebreak(),
-            ParsedElement::Block(elems) => {
-                CustomValue::Block(elems.into_iter().map(Into::into).collect())
-            }
-            ParsedElement::Function(_, _, _) => unreachable!(),
-        }
-    }
-}
-
 impl<'input> Value<'input> for CustomValue {
     const LINEBREAK: Option<Self> = Some(CustomValue::Linebreak());
 
     fn from_text_element(text: &'input str) -> Option<Self> {
         Some(Self::Text(text.to_string()))
+    }
+
+    fn from_block_element(elements: Vec<Self>) -> Option<Self> {
+        Some(Self::Block(elements))
     }
 }
 

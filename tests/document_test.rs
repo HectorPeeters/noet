@@ -1,7 +1,6 @@
 use noet::{
-    attribute::Attrs, context::Context, error::Result, evaluator::Evaluator,
-    parse_tree::ParsedElement, parser::Parser, registry::FunctionRegistry, value::Value,
-    variadic::Variadic,
+    attribute::Attrs, context::Context, error::Result, evaluator::Evaluator, parser::Parser,
+    registry::FunctionRegistry, value::Value, variadic::Variadic,
 };
 
 #[derive(Debug, PartialEq)]
@@ -14,24 +13,15 @@ pub enum Element {
     Linebreak(),
 }
 
-impl<'input> From<ParsedElement<'input>> for Element {
-    fn from(value: ParsedElement<'input>) -> Self {
-        match value {
-            ParsedElement::Text(t) => Element::Text(t.to_string()),
-            ParsedElement::HardLinebreak() => Element::Linebreak(),
-            ParsedElement::Block(elements) => {
-                Element::Block(elements.into_iter().map(Into::into).collect())
-            }
-            ParsedElement::Function(_, _, _) => unreachable!(),
-        }
-    }
-}
-
 impl<'input> Value<'input> for Element {
     const LINEBREAK: Option<Self> = Some(Element::Linebreak());
 
     fn from_text_element(text: &'input str) -> Option<Self> {
         Some(Self::Text(text.to_string()))
+    }
+
+    fn from_block_element(elements: Vec<Self>) -> Option<Self> {
+        Some(Self::Block(elements))
     }
 }
 

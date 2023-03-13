@@ -62,7 +62,15 @@ where
             ParsedElement::Function(name, attributes, arguments) => {
                 self.evaluate_function(context, name, attributes, arguments)
             }
-            _ => Ok(Some(element.into())),
+            ParsedElement::Block(elements) => Ok(V::from_block_element(
+                elements
+                    .into_iter()
+                    .map(|e| self.evaluate_element(context, e))
+                    .collect::<Result<Vec<_>>>()?
+                    .into_iter()
+                    .filter_map(|x| x)
+                    .collect(),
+            )),
         }
     }
 
