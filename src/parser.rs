@@ -158,7 +158,12 @@ impl<'input> Parser<'input> {
         while self.peek_type() != Some(TokenType::RightBracket) {
             let mut argument = self.block();
             Self::trim_argument(&mut argument);
-            arguments.push(ParsedElement::Block(argument));
+
+            if argument.len() == 1 {
+                arguments.push(argument.remove(0));
+            } else {
+                arguments.push(ParsedElement::Block(argument));
+            }
 
             if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
                 self.consume_expect(TokenType::ArgumentSeparator);
@@ -290,10 +295,7 @@ mod tests {
             Some(ParsedElement::Function(
                 "test",
                 vec![],
-                vec![
-                    ParsedElement::Block(vec![ParsedElement::Text("first")]),
-                    ParsedElement::Block(vec![ParsedElement::Text("second")])
-                ]
+                vec![ParsedElement::Text("first"), ParsedElement::Text("second")]
             ))
         );
         assert!(parser.next().is_none());
@@ -308,9 +310,7 @@ mod tests {
             Some(ParsedElement::Function(
                 "title",
                 vec![],
-                vec![ParsedElement::Block(vec![ParsedElement::Text(
-                    "Test Document"
-                )]),]
+                vec![ParsedElement::Text("Test Document"),]
             ))
         );
         assert_eq!(parser.next(), Some(ParsedElement::Text("\n")));
@@ -320,8 +320,8 @@ mod tests {
                 "authors",
                 vec![],
                 vec![
-                    ParsedElement::Block(vec![ParsedElement::Text("John Doe")]),
-                    ParsedElement::Block(vec![ParsedElement::Text("Jane Doe")]),
+                    ParsedElement::Text("John Doe"),
+                    ParsedElement::Text("Jane Doe")
                 ]
             ))
         );
@@ -340,10 +340,7 @@ mod tests {
                     Attribute::new_flag("abc"),
                     Attribute::new_value("def", "ghi")
                 ],
-                vec![
-                    ParsedElement::Block(vec![ParsedElement::Text("first")]),
-                    ParsedElement::Block(vec![ParsedElement::Text("second")])
-                ]
+                vec![ParsedElement::Text("first"), ParsedElement::Text("second")]
             ))
         );
         assert!(parser.next().is_none());
@@ -380,18 +377,12 @@ mod tests {
                 "list",
                 vec![],
                 vec![
-                    ParsedElement::Block(vec![ParsedElement::Function(
+                    ParsedElement::Function(
                         "mi",
                         vec![],
-                        vec![ParsedElement::Block(vec![ParsedElement::Text(
-                            "\\lambda x.M"
-                        )])]
-                    )]),
-                    ParsedElement::Block(vec![ParsedElement::Function(
-                        "mi",
-                        vec![],
-                        vec![ParsedElement::Block(vec![ParsedElement::Text("(M\\;N)")])]
-                    )])
+                        vec![ParsedElement::Text("\\lambda x.M")]
+                    ),
+                    ParsedElement::Function("mi", vec![], vec![ParsedElement::Text("(M\\;N)")])
                 ]
             ))
         );

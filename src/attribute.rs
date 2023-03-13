@@ -1,3 +1,5 @@
+use std::{fmt::Debug, str::FromStr};
+
 #[derive(Debug, PartialEq)]
 pub struct Attribute<'input> {
     pub key: &'input str,
@@ -32,10 +34,15 @@ impl<'input> Attrs<'input> {
             .any(|x| x.key == key && x.value.is_none())
     }
 
-    pub fn get_value(&self, key: &str) -> Option<&'input str> {
+    pub fn get_value<T>(&self, key: &str) -> Option<T>
+    where
+        T: FromStr,
+        T::Err: Debug,
+    {
         self.values
             .iter()
             .find(|x| x.key == key)
             .and_then(|x| x.value)
+            .map(|x| x.parse().unwrap())
     }
 }

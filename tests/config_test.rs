@@ -66,7 +66,7 @@ fn func_test(context: &mut CustomContext, _attrs: &Attrs, value: String) -> Opti
 }
 
 fn func_attr(context: &mut CustomContext, attrs: &Attrs, _value: String) -> Option<CustomValue> {
-    context.flag_lang = attrs.get_value("lang").map(|x| x.to_string());
+    context.flag_lang = attrs.get_value("lang");
     None
 }
 
