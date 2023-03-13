@@ -33,17 +33,8 @@ where
         attributes: Vec<Attribute<'input>>,
         arguments: Vec<ParsedElement<'input>>,
     ) -> Result<Option<V>> {
-        let mut evaluated_arguments = vec![];
-        for arg in arguments {
-            if let Some(evaluated_arg) = self.evaluate_element(arg)? {
-                evaluated_arguments.push(evaluated_arg);
-            }
-        }
-
-        let attrs = Attrs::new(attributes);
-
         match self.function_registry.get(name) {
-            Some(func) => func(self.context, attrs, evaluated_arguments),
+            Some(func) => func(self.context, Attrs::new(attributes), arguments),
             None => Err(Error::Eval(format!("Function '{name}' not found"), None)),
         }
     }

@@ -1,5 +1,5 @@
 use noet::{
-    argument::Argument, attribute::Attrs, context::Context, error::Result, evaluator::Evaluator,
+    attribute::Attrs, context::Context, error::Result, evaluator::Evaluator,
     parse_tree::ParsedElement, parser::Parser, registry::FunctionRegistry, value::Value,
     variadic::Variadic,
 };
@@ -27,24 +27,9 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
 
 impl<'input> Value<'input> for CustomValue {}
 
-impl<'a> Argument<'a, CustomValue> for String {
-    fn from_value(value: CustomValue) -> Result<Self> {
-        match value {
-            CustomValue::Text(t) => Ok(t.to_string()),
-            CustomValue::Block(mut elems) => {
-                if elems.len() != 1 {
-                    panic!();
-                }
-
-                Argument::from_value(elems.remove(0))
-            }
-            _ => unreachable!(),
-        }
-    }
-}
-
 #[derive(Default)]
 pub struct CustomContext {
+    pub version: u32,
     pub value: String,
     pub flag_lang: Option<String>,
     pub flag_export: bool,
@@ -54,6 +39,7 @@ pub struct CustomContext {
 impl Context<CustomValue> for CustomContext {
     fn register_functions(registry: &mut FunctionRegistry<Self, CustomValue>) {
         registry.register_function(func_test, "test");
+        registry.register_function(func_version, "version");
         registry.register_function(func_attr, "attr");
         registry.register_function(func_flag_attr, "flag-attr");
         registry.register_function(func_variadic, "variadic");
@@ -62,6 +48,11 @@ impl Context<CustomValue> for CustomContext {
 
 fn func_test(context: &mut CustomContext, _attrs: Attrs, value: String) -> Result<()> {
     context.value = value;
+    Ok(())
+}
+
+fn func_version(context: &mut CustomContext, _attrs: Attrs, version: u32) -> Result<()> {
+    context.version = version;
     Ok(())
 }
 
@@ -107,6 +98,20 @@ fn evaluate_single_argument_function() -> Result<()> {
     evaluator.evaluate_document(parser)?;
 
     assert_eq!(context.value, "test");
+
+    Ok(())
+}
+
+#[test]
+fn evaluate_single_argument_function_numeric() -> Result<()> {
+    let mut context = CustomContext::default();
+
+    let parser = Parser::new("[#version 1234]");
+
+    let mut evaluator = Evaluator::new(&mut context);
+    evaluator.evaluate_document(parser)?;
+
+    assert_eq!(context.version, 1234);
 
     Ok(())
 }

@@ -1,5 +1,5 @@
 use noet::{
-    argument::Argument, attribute::Attrs, context::Context, error::Result, evaluator::Evaluator,
+    attribute::Attrs, context::Context, error::Result, evaluator::Evaluator,
     parse_tree::ParsedElement, parser::Parser, registry::FunctionRegistry, value::Value,
     variadic::Variadic,
 };
@@ -28,22 +28,6 @@ impl<'input> From<ParsedElement<'input>> for Element {
 }
 
 impl<'input> Value<'input> for Element {}
-
-impl<'a> Argument<'a, Element> for String {
-    fn from_value(value: Element) -> Result<Self> {
-        match value {
-            Element::Text(t) => Ok(t.to_string()),
-            Element::Block(mut elems) => {
-                if elems.len() != 1 {
-                    panic!();
-                }
-
-                Argument::from_value(elems.remove(0))
-            }
-            _ => unreachable!(),
-        }
-    }
-}
 
 #[derive(Default)]
 pub struct Note {
