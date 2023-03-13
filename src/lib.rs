@@ -3,6 +3,7 @@
 #![feature(let_chains)]
 
 pub mod argument;
+pub mod attribute;
 pub mod context;
 pub mod evaluator;
 pub mod function;

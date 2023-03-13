@@ -1,8 +1,9 @@
 use std::iter::Peekable;
 
 use crate::{
+    attribute::Attribute,
     lexer::{Lexer, Span, Token, TokenType},
-    parse_tree::{Block, ParsedAttribute, ParsedElement},
+    parse_tree::{Block, ParsedElement},
 };
 
 pub struct Parser<'input> {
@@ -91,11 +92,12 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    fn attribute(&mut self) -> ParsedAttribute<'input> {
+    fn attribute(&mut self) -> Attribute<'input> {
         let key = self.consume_expect(TokenType::AttributeIdentifier);
+        let key_str = &self.input[key.span].trim_start_matches(|c| c == '@');
 
         match self.peek_type() {
-            Some(TokenType::Whitespace) => ParsedAttribute::new_flag(&self.input[key.span]),
+            Some(TokenType::Whitespace) => Attribute::new_flag(key_str),
             Some(TokenType::LeftParen) => {
                 self.consume_expect(TokenType::LeftParen);
 
@@ -106,7 +108,7 @@ impl<'input> Parser<'input> {
                 self.consume_expect(TokenType::RightParen);
 
                 if let ParsedElement::Text(value) = value_element {
-                    ParsedAttribute::new_value(&self.input[key.span], value)
+                    Attribute::new_value(key_str, value)
                 } else {
                     panic!("Value of attribute should be a string");
                 }
@@ -331,8 +333,8 @@ mod tests {
             Some(ParsedElement::Function(
                 "test",
                 vec![
-                    ParsedAttribute::new_flag("@abc"),
-                    ParsedAttribute::new_value("@def", "ghi")
+                    Attribute::new_flag("abc"),
+                    Attribute::new_value("def", "ghi")
                 ],
                 vec![
                     Block::new(vec![ParsedElement::Text("first")]),

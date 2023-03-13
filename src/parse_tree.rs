@@ -1,30 +1,9 @@
-#[derive(Debug, PartialEq)]
-pub struct ParsedAttribute<'input> {
-    pub key: &'input str,
-    pub value: Option<&'input str>,
-}
-
-impl<'input> ParsedAttribute<'input> {
-    pub fn new_flag(key: &'input str) -> Self {
-        Self { key, value: None }
-    }
-
-    pub fn new_value(key: &'input str, value: &'input str) -> Self {
-        Self {
-            key,
-            value: Some(value),
-        }
-    }
-}
+use crate::attribute::Attribute;
 
 #[derive(Debug, PartialEq)]
 pub enum ParsedElement<'input> {
     Text(&'input str),
-    Function(
-        &'input str,
-        Vec<ParsedAttribute<'input>>,
-        Vec<Block<'input>>,
-    ),
+    Function(&'input str, Vec<Attribute<'input>>, Vec<Block<'input>>),
     HardLinebreak(),
 }
 

@@ -1,11 +1,9 @@
-use crate::value::{AttributeValue, Value};
+use crate::value::Value;
 
 pub trait Argument<'input, Value: 'input>
 where
     Self: Sized,
 {
-    const IS_ATTRIBUTE: bool = false;
-
     fn from_block(value: &'input Vec<Value>) -> Option<Self>;
 
     fn from_blocks<I>(values: &mut I) -> Option<Self>
@@ -13,13 +11,6 @@ where
         I: Iterator<Item = &'input Vec<Value>>,
     {
         values.next().and_then(Self::from_block)
-    }
-
-    fn from_attributes<I>(_attributes: &mut I) -> Option<Self>
-    where
-        I: Iterator<Item = &'input AttributeValue<'input, Value>>,
-    {
-        unreachable!()
     }
 }
 

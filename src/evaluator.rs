@@ -1,6 +1,7 @@
 use crate::{
+    attribute::{Attribute, Attrs},
     context::Context,
-    parse_tree::{Block, ParsedAttribute, ParsedElement},
+    parse_tree::{Block, ParsedElement},
     registry::FunctionRegistry,
     value::Value,
 };
@@ -36,7 +37,7 @@ where
     fn evaluate_function(
         &mut self,
         name: &'input str,
-        attributes: Vec<ParsedAttribute<'input>>,
+        attributes: Vec<Attribute<'input>>,
         arguments: Vec<Block<'input>>,
     ) -> Option<V> {
         let evaluated_arguments = arguments
@@ -44,8 +45,10 @@ where
             .map(|a| self.evaluate_block(a))
             .collect::<Vec<_>>();
 
+        let attrs = Attrs::new(attributes);
+
         match self.function_registry.get(name) {
-            Some(func) => func(self.context, &vec![], &evaluated_arguments),
+            Some(func) => func(self.context, &attrs, &evaluated_arguments),
             None => panic!("Function '{name}' not found"),
         }
     }

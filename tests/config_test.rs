@@ -1,6 +1,6 @@
 use noet::{
-    argument::Argument, context::Context, evaluator::Evaluator, parse_tree::ParsedElement,
-    parser::Parser, registry::FunctionRegistry, value::Value,
+    argument::Argument, attribute::Attrs, context::Context, evaluator::Evaluator,
+    parse_tree::ParsedElement, parser::Parser, registry::FunctionRegistry, value::Value,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -42,22 +42,22 @@ pub struct CustomContext {
 impl Context<CustomValue> for CustomContext {
     fn register_functions(registry: &mut FunctionRegistry<Self, CustomValue>) {
         registry.register_function(func_test, "test");
-        //        registry.register_function(func_attr, "attr");
+        registry.register_function(func_attr, "attr");
         //        registry.register_function(func_flag_attr, "flag-attr");
         //        registry.register_function(func_variadic, "variadic");
     }
 }
 
-fn func_test(context: &mut CustomContext, value: String) -> Option<CustomValue> {
+fn func_test(context: &mut CustomContext, attrs: &Attrs, value: String) -> Option<CustomValue> {
     context.value = value;
     None
 }
 
-// fn func_attr(context: &mut CustomContext, lang: Attribute<"lang", String>) -> Option<CustomValue> {
-//     context.flag_lang = lang.into_inner();
-//     None
-// }
-//
+fn func_attr(context: &mut CustomContext, attrs: &Attrs, value: String) -> Option<CustomValue> {
+    context.flag_lang = attrs.get_value("lang").map(|x| x.to_string());
+    None
+}
+
 // fn func_flag_attr(
 //     context: &mut CustomContext,
 //     lang: Attribute<"export", ()>,
@@ -75,7 +75,7 @@ fn func_test(context: &mut CustomContext, value: String) -> Option<CustomValue> 
 fn evaluate_text() {
     let mut context = CustomContext::default();
 
-    let mut parser = Parser::new("This is some simple text.");
+    let parser = Parser::new("This is some simple text.");
 
     let mut evaluator = Evaluator::new(&mut context);
     let evaluated_document = evaluator.evaluate_document(parser);
@@ -90,7 +90,7 @@ fn evaluate_text() {
 fn evaluate_single_argument_function() {
     let mut context = CustomContext::default();
 
-    let mut parser = Parser::new("[#test test]");
+    let parser = Parser::new("[#test test]");
 
     let mut evaluator = Evaluator::new(&mut context);
     evaluator.evaluate_document(parser);
@@ -98,18 +98,18 @@ fn evaluate_single_argument_function() {
     assert_eq!(context.value, "test");
 }
 
-// #[test]
-// fn evaluate_single_attribute_function() {
-//     let mut context = CustomContext::default();
-//
-//     let document = parser::note("[#attr @lang(rust)]").unwrap();
-//
-//     let mut evaluator = Evaluator::new(&mut context);
-//     evaluator.evaluate_document(document);
-//
-//     assert_eq!(context.flag_lang, Some("rust".to_string()));
-// }
-//
+#[test]
+fn evaluate_single_attribute_function() {
+    let mut context = CustomContext::default();
+
+    let parser = Parser::new("[#attr @lang(rust) some code]");
+
+    let mut evaluator = Evaluator::new(&mut context);
+    evaluator.evaluate_document(parser);
+
+    assert_eq!(context.flag_lang, Some("rust".to_string()));
+}
+
 // #[test]
 // fn evaluate_single_flag_attribute_function() {
 //     let mut context = CustomContext::default();
