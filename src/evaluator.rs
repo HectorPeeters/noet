@@ -68,7 +68,7 @@ where
                     .map(|e| self.evaluate_element(context, e))
                     .collect::<Result<Vec<_>>>()?
                     .into_iter()
-                    .filter_map(|x| x)
+                    .flatten()
                     .collect(),
             )),
         }
