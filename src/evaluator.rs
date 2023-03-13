@@ -1,6 +1,7 @@
 use crate::{
+    attribute::{Attribute, Attrs},
     context::Context,
-    parse_tree::{ParsedAttribute, ParsedDocument, ParsedElement},
+    parse_tree::{Block, ParsedElement},
     registry::FunctionRegistry,
     value::Value,
 };
@@ -25,29 +26,29 @@ where
         }
     }
 
+    fn evaluate_block(&mut self, block: Block<'input>) -> Vec<V> {
+        block
+            .elements
+            .into_iter()
+            .filter_map(|e| self.evaluate_element(e))
+            .collect()
+    }
+
     fn evaluate_function(
         &mut self,
         name: &'input str,
-        attributes: Vec<ParsedAttribute<'input>>,
-        arguments: Vec<ParsedElement<'input>>,
+        attributes: Vec<Attribute<'input>>,
+        arguments: Vec<Block<'input>>,
     ) -> Option<V> {
         let evaluated_arguments = arguments
             .into_iter()
-            .filter_map(|a| self.evaluate_element(a))
+            .map(|a| self.evaluate_block(a))
             .collect::<Vec<_>>();
 
-        let evaluated_attributes = attributes
-            .into_iter()
-            .filter_map(|attr| match attr {
-                ParsedAttribute::Flag(name) => Some((name, V::empty())),
-                ParsedAttribute::Value(name, value) => {
-                    self.evaluate_element(value).map(|v| (name, v))
-                }
-            })
-            .collect::<Vec<_>>();
+        let attrs = Attrs::new(attributes);
 
         match self.function_registry.get(name) {
-            Some(func) => func(self.context, &evaluated_attributes, &evaluated_arguments),
+            Some(func) => func(self.context, &attrs, &evaluated_arguments),
             None => panic!("Function '{name}' not found"),
         }
     }
@@ -57,15 +58,14 @@ where
             ParsedElement::Function(name, attributes, arguments) => {
                 self.evaluate_function(name, attributes, arguments)
             }
-            _ => V::from_element(&element),
+            _ => Some(V::from(element)),
         }
     }
 
-    pub fn evaluate_document(&mut self, document: ParsedDocument<'input>) -> Vec<V> {
-        document
-            .elements
-            .into_iter()
-            .filter_map(|e| self.evaluate_element(e))
-            .collect()
+    pub fn evaluate_document<I>(&mut self, document: I) -> Vec<V>
+    where
+        I: Iterator<Item = ParsedElement<'input>>,
+    {
+        document.filter_map(|e| self.evaluate_element(e)).collect()
     }
 }

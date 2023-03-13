@@ -1,50 +1,37 @@
-pub trait Argument<'a, Value: 'a>
+use crate::value::Value;
+
+pub trait Argument<'input, Value: 'input>
 where
     Self: Sized,
 {
-    fn from_value(value: &'a Value) -> Option<Self>;
+    fn from_block(value: &'input [Value]) -> Option<Self>;
 
-    fn from_values<I>(values: &mut I) -> Option<Self>
+    fn from_blocks<I>(values: &mut I) -> Option<Self>
     where
-        I: Iterator<Item = &'a Value>,
+        I: Iterator<Item = &'input Vec<Value>>,
     {
-        match values.next() {
-            Some(x) => Self::from_value(x),
-            None => None,
-        }
-    }
-
-    fn from_attributes<I>(_attributes: &mut I) -> Option<Self>
-    where
-        // TODO: (&'a str, Value) can be its own type
-        I: Iterator<Item = &'a (&'a str, Value)>,
-    {
-        unreachable!()
-    }
-
-    fn is_attribute() -> bool {
-        false
+        values.next().and_then(|v| Self::from_block(v))
     }
 }
 
-impl<'a, Value: 'a> Argument<'a, Value> for () {
-    fn from_value(_: &'a Value) -> Option<Self> {
-        Some(())
-    }
-}
-
-impl<'a, T, Value: 'a> Argument<'a, Value> for Option<T>
+impl<'input, V: 'input> Argument<'input, V> for V
 where
-    T: Argument<'a, Value>,
+    V: Value<'input>,
 {
-    fn from_value(value: &'a Value) -> Option<Self> {
-        Some(Argument::from_value(value))
-    }
+    fn from_block(value: &'input [V]) -> Option<Self> {
+        assert_eq!(value.len(), 1);
 
-    fn from_values<I>(values: &mut I) -> Option<Self>
-    where
-        I: Iterator<Item = &'a Value>,
-    {
-        values.next().map(|x| Argument::from_value(x))
+        let first = &value[0];
+        Some(first.clone())
+    }
+}
+
+impl<'input, V: 'input> Argument<'input, V> for Vec<V>
+where
+    V: Value<'input>,
+{
+    fn from_block(value: &'input [V]) -> Option<Self> {
+        assert_eq!(value.len(), 1);
+        Some(value.to_vec())
     }
 }

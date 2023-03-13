@@ -1,26 +1,18 @@
-#[derive(Debug, PartialEq)]
-pub enum ParsedAttribute<'input> {
-    Flag(&'input str),
-    Value(&'input str, ParsedElement<'input>),
-}
+use crate::attribute::Attribute;
 
 #[derive(Debug, PartialEq)]
 pub enum ParsedElement<'input> {
     Text(&'input str),
-    Function(
-        &'input str,
-        Vec<ParsedAttribute<'input>>,
-        Vec<ParsedElement<'input>>,
-    ),
-    ParagraphBreak(),
+    Function(&'input str, Vec<Attribute<'input>>, Vec<Block<'input>>),
+    HardLinebreak(),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ParsedDocument<'input> {
+pub struct Block<'input> {
     pub elements: Vec<ParsedElement<'input>>,
 }
 
-impl<'input> ParsedDocument<'input> {
+impl<'input> Block<'input> {
     pub fn new(elements: Vec<ParsedElement<'input>>) -> Self {
         Self { elements }
     }

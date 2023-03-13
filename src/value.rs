@@ -1,9 +1,9 @@
 use crate::parse_tree::ParsedElement;
 
+pub type BlockValue<Value> = Vec<Value>;
+
 pub trait Value<'input>
 where
-    Self: Sized,
+    Self: Sized + Clone + From<ParsedElement<'input>>,
 {
-    fn from_element(element: &ParsedElement<'input>) -> Option<Self>;
-    fn empty() -> Self;
 }

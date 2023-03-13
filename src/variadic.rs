@@ -1,58 +1,29 @@
-use std::ops::{Deref, DerefMut};
-
 use crate::argument::Argument;
 
 pub struct Variadic<T> {
-    values: Vec<T>,
+    inner: Vec<T>,
 }
 
-impl<'a, Value: 'a, T> Argument<'a, Value> for Variadic<T>
+impl<T> From<Variadic<T>> for Vec<T> {
+    fn from(val: Variadic<T>) -> Self {
+        val.inner
+    }
+}
+
+impl<'input, Value: 'input, T> Argument<'input, Value> for Variadic<T>
 where
-    T: Argument<'a, Value>,
+    T: Argument<'input, Value>,
 {
-    fn from_value(value: &'a Value) -> Option<Self> {
-        let elements = match Argument::from_value(value) {
-            Some(element) => vec![element],
-            None => Vec::new(),
-        };
-
-        Some(Self { values: elements })
+    fn from_block(value: &'input [Value]) -> Option<Self> {
+        T::from_block(value).map(|v| Variadic { inner: vec![v] })
     }
 
-    fn from_values<I>(values: &mut I) -> Option<Self>
+    fn from_blocks<I>(values: &mut I) -> Option<Self>
     where
-        I: Iterator<Item = &'a Value>,
+        I: Iterator<Item = &'input Vec<Value>>,
     {
-        Some(Self {
-            values: values.filter_map(|x| Argument::from_value(x)).collect(),
+        Some(Variadic {
+            inner: values.filter_map(|v| T::from_block(v)).collect(),
         })
-    }
-}
-
-impl<T> Variadic<T> {
-    pub fn into_inner(self) -> Vec<T> {
-        self.values
-    }
-}
-
-impl<T> Iterator for Variadic<T> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.values.pop()
-    }
-}
-
-impl<T> Deref for Variadic<T> {
-    type Target = Vec<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.values
-    }
-}
-
-impl<T> DerefMut for Variadic<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.values
     }
 }
