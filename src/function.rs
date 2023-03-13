@@ -16,7 +16,7 @@ where
             let mut args = args.iter();
 
             // TODO: get rid of unwrap
-            let arg = A::from_blocks(&mut args).unwrap();
+            let arg = A::from_values(&mut args).unwrap();
 
             self(context, attrs, arg)
         })
@@ -34,8 +34,8 @@ where
             let mut args = args.iter();
 
             // TODO: get rid of unwrap
-            let arg1 = A::from_blocks(&mut args).unwrap();
-            let arg2 = B::from_blocks(&mut args).unwrap();
+            let arg1 = A::from_values(&mut args).unwrap();
+            let arg2 = B::from_values(&mut args).unwrap();
 
             self(context, attrs, arg1, arg2)
         })

@@ -14,18 +14,18 @@ impl<'input, Value: 'input, T> Argument<'input, Value> for Variadic<T>
 where
     T: Argument<'input, Value>,
 {
-    fn from_block(value: &Value) -> Self {
+    fn from_value(value: &Value) -> Self {
         Variadic {
-            inner: vec![T::from_block(value)],
+            inner: vec![T::from_value(value)],
         }
     }
 
-    fn from_blocks<I>(values: &mut I) -> Option<Self>
+    fn from_values<I>(values: &mut I) -> Option<Self>
     where
         I: Iterator<Item = &'input Value>,
     {
         Some(Variadic {
-            inner: values.map(|v| T::from_block(v)).collect(),
+            inner: values.map(|v| T::from_value(v)).collect(),
         })
     }
 }

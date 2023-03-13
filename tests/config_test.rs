@@ -28,7 +28,7 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
 impl<'input> Value<'input> for CustomValue {}
 
 impl<'a> Argument<'a, CustomValue> for String {
-    fn from_block(value: &CustomValue) -> Self {
+    fn from_value(value: &CustomValue) -> Self {
         match value {
             CustomValue::Text(t) => t.to_string(),
             CustomValue::Block(elems) => {
@@ -36,7 +36,7 @@ impl<'a> Argument<'a, CustomValue> for String {
                     panic!();
                 }
 
-                Argument::from_block(&elems[0])
+                Argument::from_value(&elems[0])
             }
             _ => unreachable!(),
         }

@@ -30,7 +30,7 @@ impl<'input> From<ParsedElement<'input>> for Element {
 impl<'input> Value<'input> for Element {}
 
 impl<'a> Argument<'a, Element> for String {
-    fn from_block(value: &Element) -> Self {
+    fn from_value(value: &Element) -> Self {
         match value {
             Element::Text(t) => t.to_string(),
             Element::Block(elems) => {
@@ -38,7 +38,7 @@ impl<'a> Argument<'a, Element> for String {
                     panic!();
                 }
 
-                Argument::from_block(&elems[0])
+                Argument::from_value(&elems[0])
             }
             _ => unreachable!(),
         }
