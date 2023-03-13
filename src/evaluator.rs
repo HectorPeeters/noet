@@ -1,7 +1,7 @@
 use crate::{
     attribute::{Attribute, Attrs},
     context::Context,
-    parse_tree::{Block, ParsedElement},
+    parse_tree::ParsedElement,
     registry::FunctionRegistry,
     value::Value,
 };
@@ -26,23 +26,15 @@ where
         }
     }
 
-    fn evaluate_block(&mut self, block: Block<'input>) -> Vec<V> {
-        block
-            .elements
-            .into_iter()
-            .filter_map(|e| self.evaluate_element(e))
-            .collect()
-    }
-
     fn evaluate_function(
         &mut self,
         name: &'input str,
         attributes: Vec<Attribute<'input>>,
-        arguments: Vec<Block<'input>>,
+        arguments: Vec<ParsedElement<'input>>,
     ) -> Option<V> {
         let evaluated_arguments = arguments
             .into_iter()
-            .map(|a| self.evaluate_block(a))
+            .filter_map(|a| self.evaluate_element(a))
             .collect::<Vec<_>>();
 
         let attrs = Attrs::new(attributes);

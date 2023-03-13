@@ -1,7 +1,6 @@
-use crate::{argument::Argument, attribute::Attrs, value::BlockValue};
+use crate::{argument::Argument, attribute::Attrs};
 
-pub type Function<Context, Value> =
-    Box<dyn Fn(&mut Context, &Attrs, &[BlockValue<Value>]) -> Option<Value>>;
+pub type Function<Context, Value> = Box<dyn Fn(&mut Context, &Attrs, &[Value]) -> Option<Value>>;
 
 pub trait ToFunction<Context, Value, Args> {
     fn to_function(self) -> Function<Context, Value>;

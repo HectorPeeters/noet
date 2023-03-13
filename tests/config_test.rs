@@ -9,6 +9,7 @@ pub enum CustomValue {
     Text(String),
     Empty(),
     Linebreak(),
+    Block(Vec<CustomValue>),
 }
 
 impl<'input> From<ParsedElement<'input>> for CustomValue {
@@ -16,6 +17,9 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
         match value {
             ParsedElement::Text(t) => CustomValue::Text(t.to_string()),
             ParsedElement::HardLinebreak() => CustomValue::Linebreak(),
+            ParsedElement::Block(elems) => {
+                CustomValue::Block(elems.into_iter().map(Into::into).collect())
+            }
             ParsedElement::Function(_, _, _) => unreachable!(),
         }
     }
@@ -24,9 +28,16 @@ impl<'input> From<ParsedElement<'input>> for CustomValue {
 impl<'input> Value<'input> for CustomValue {}
 
 impl<'a> Argument<'a, CustomValue> for String {
-    fn from_block(value: &'a [CustomValue]) -> Option<Self> {
-        match &value[0] {
+    fn from_block(value: &CustomValue) -> Option<Self> {
+        match value {
             CustomValue::Text(t) => Some(t.to_string()),
+            CustomValue::Block(elems) => {
+                if elems.len() != 1 {
+                    return None;
+                }
+
+                Argument::from_block(&elems[0])
+            }
             _ => unreachable!(),
         }
     }

@@ -3,7 +3,7 @@ use std::iter::Peekable;
 use crate::{
     attribute::Attribute,
     lexer::{Lexer, Span, Token, TokenType},
-    parse_tree::{Block, ParsedElement},
+    parse_tree::ParsedElement,
 };
 
 pub struct Parser<'input> {
@@ -119,22 +119,22 @@ impl<'input> Parser<'input> {
         }
     }
 
-    fn trim_argument(block: &mut Block) -> bool {
-        if let Some(ParsedElement::Text(t)) = block.elements.first_mut() {
+    fn trim_argument(elements: &mut Vec<ParsedElement>) -> bool {
+        if let Some(ParsedElement::Text(t)) = elements.first_mut() {
             *t = t.trim_start();
             if t.is_empty() {
-                block.elements.remove(0);
+                elements.remove(0);
             }
         }
 
-        if let Some(ParsedElement::Text(t)) = block.elements.last_mut() {
+        if let Some(ParsedElement::Text(t)) = elements.last_mut() {
             *t = t.trim_end();
             if t.is_empty() {
-                block.elements.pop();
+                elements.pop();
             }
         }
 
-        !block.elements.is_empty()
+        !elements.is_empty()
     }
 
     #[inline]
@@ -158,7 +158,7 @@ impl<'input> Parser<'input> {
         while self.peek_type() != Some(TokenType::RightBracket) {
             let mut argument = self.block();
             Self::trim_argument(&mut argument);
-            arguments.push(argument);
+            arguments.push(ParsedElement::Block(argument));
 
             if let Some(TokenType::ArgumentSeparator) = self.peek_type() {
                 self.consume_expect(TokenType::ArgumentSeparator);
@@ -179,7 +179,7 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    fn block(&mut self) -> Block<'input> {
+    fn block(&mut self) -> Vec<ParsedElement<'input>> {
         let mut elements = vec![];
 
         loop {
@@ -198,7 +198,7 @@ impl<'input> Parser<'input> {
             }
         }
 
-        Block::new(elements)
+        elements
     }
 
     fn element(&mut self) -> Option<ParsedElement<'input>> {
@@ -291,8 +291,8 @@ mod tests {
                 "test",
                 vec![],
                 vec![
-                    Block::new(vec![ParsedElement::Text("first")]),
-                    Block::new(vec![ParsedElement::Text("second")])
+                    ParsedElement::Block(vec![ParsedElement::Text("first")]),
+                    ParsedElement::Block(vec![ParsedElement::Text("second")])
                 ]
             ))
         );
@@ -308,7 +308,9 @@ mod tests {
             Some(ParsedElement::Function(
                 "title",
                 vec![],
-                vec![Block::new(vec![ParsedElement::Text("Test Document")]),]
+                vec![ParsedElement::Block(vec![ParsedElement::Text(
+                    "Test Document"
+                )]),]
             ))
         );
         assert_eq!(parser.next(), Some(ParsedElement::Text("\n")));
@@ -318,8 +320,8 @@ mod tests {
                 "authors",
                 vec![],
                 vec![
-                    Block::new(vec![ParsedElement::Text("John Doe")]),
-                    Block::new(vec![ParsedElement::Text("Jane Doe")]),
+                    ParsedElement::Block(vec![ParsedElement::Text("John Doe")]),
+                    ParsedElement::Block(vec![ParsedElement::Text("Jane Doe")]),
                 ]
             ))
         );
@@ -339,8 +341,8 @@ mod tests {
                     Attribute::new_value("def", "ghi")
                 ],
                 vec![
-                    Block::new(vec![ParsedElement::Text("first")]),
-                    Block::new(vec![ParsedElement::Text("second")])
+                    ParsedElement::Block(vec![ParsedElement::Text("first")]),
+                    ParsedElement::Block(vec![ParsedElement::Text("second")])
                 ]
             ))
         );
@@ -358,13 +360,11 @@ mod tests {
             Some(ParsedElement::Function(
                 "quote",
                 vec![],
-                vec![Block {
-                    elements: vec![
-                        ParsedElement::Text("Some quote..."),
-                        ParsedElement::HardLinebreak(),
-                        ParsedElement::Text("Spread over multiple paragraphs.\nBecause edgecases!"),
-                    ]
-                }]
+                vec![ParsedElement::Block(vec![
+                    ParsedElement::Text("Some quote..."),
+                    ParsedElement::HardLinebreak(),
+                    ParsedElement::Text("Spread over multiple paragraphs.\nBecause edgecases!"),
+                ])]
             ))
         );
         assert!(parser.next().is_none());
@@ -380,24 +380,18 @@ mod tests {
                 "list",
                 vec![],
                 vec![
-                    Block {
-                        elements: vec![ParsedElement::Function(
-                            "mi",
-                            vec![],
-                            vec![Block {
-                                elements: vec![ParsedElement::Text("\\lambda x.M")]
-                            }]
-                        )]
-                    },
-                    Block {
-                        elements: vec![ParsedElement::Function(
-                            "mi",
-                            vec![],
-                            vec![Block {
-                                elements: vec![ParsedElement::Text("(M\\;N)")]
-                            }]
-                        )]
-                    }
+                    ParsedElement::Block(vec![ParsedElement::Function(
+                        "mi",
+                        vec![],
+                        vec![ParsedElement::Block(vec![ParsedElement::Text(
+                            "\\lambda x.M"
+                        )])]
+                    )]),
+                    ParsedElement::Block(vec![ParsedElement::Function(
+                        "mi",
+                        vec![],
+                        vec![ParsedElement::Block(vec![ParsedElement::Text("(M\\;N)")])]
+                    )])
                 ]
             ))
         );
