@@ -97,7 +97,9 @@ impl<'input> Parser<'input> {
         let key_str = &self.input[key.span].trim_start_matches(|c| c == '@');
 
         match self.peek_type() {
-            Some(TokenType::Whitespace) => Attribute::new_flag(key_str),
+            Some(TokenType::Whitespace) | Some(TokenType::RightBracket) => {
+                Attribute::new_flag(key_str)
+            }
             Some(TokenType::LeftParen) => {
                 self.consume_expect(TokenType::LeftParen);
 

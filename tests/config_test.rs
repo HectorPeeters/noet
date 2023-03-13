@@ -43,7 +43,7 @@ impl Context<CustomValue> for CustomContext {
     fn register_functions(registry: &mut FunctionRegistry<Self, CustomValue>) {
         registry.register_function(func_test, "test");
         registry.register_function(func_attr, "attr");
-        //        registry.register_function(func_flag_attr, "flag-attr");
+        registry.register_function(func_flag_attr, "flag-attr");
         //        registry.register_function(func_variadic, "variadic");
     }
 }
@@ -58,14 +58,15 @@ fn func_attr(context: &mut CustomContext, attrs: &Attrs, _value: String) -> Opti
     None
 }
 
-// fn func_flag_attr(
-//     context: &mut CustomContext,
-//     lang: Attribute<"export", ()>,
-// ) -> Option<CustomValue> {
-//     context.flag_export = lang.into_inner().is_some();
-//     None
-// }
-//
+fn func_flag_attr(
+    context: &mut CustomContext,
+    attrs: &Attrs,
+    _value: String,
+) -> Option<CustomValue> {
+    context.flag_export = attrs.has_flag("export");
+    None
+}
+
 // fn func_variadic(context: &mut CustomContext, args: Variadic<String>) -> Option<CustomValue> {
 //     context.variadic_values = args.into_inner();
 //     None
@@ -110,18 +111,18 @@ fn evaluate_single_attribute_function() {
     assert_eq!(context.flag_lang, Some("rust".to_string()));
 }
 
-// #[test]
-// fn evaluate_single_flag_attribute_function() {
-//     let mut context = CustomContext::default();
-//
-//     let document = parser::note("[#flag-attr @export]").unwrap();
-//
-//     let mut evaluator = Evaluator::new(&mut context);
-//     evaluator.evaluate_document(document);
-//
-//     assert!(context.flag_export);
-// }
-//
+#[test]
+fn evaluate_single_flag_attribute_function() {
+    let mut context = CustomContext::default();
+
+    let parser = Parser::new("[#flag-attr @export some text]");
+
+    let mut evaluator = Evaluator::new(&mut context);
+    evaluator.evaluate_document(parser);
+
+    assert!(context.flag_export);
+}
+
 // #[test]
 // fn evaluate_single_flag_attribute_function_not_present() {
 //     let mut context = CustomContext::default();
