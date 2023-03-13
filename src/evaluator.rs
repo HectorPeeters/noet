@@ -1,7 +1,7 @@
 use crate::{
     attribute::{Attribute, Attrs},
     context::Context,
-    error::Result,
+    error::{Error, Result},
     parse_tree::ParsedElement,
     registry::FunctionRegistry,
     value::Value,
@@ -44,7 +44,7 @@ where
 
         match self.function_registry.get(name) {
             Some(func) => func(self.context, attrs, evaluated_arguments),
-            None => panic!("Function '{name}' not found"),
+            None => Err(Error::Eval(format!("Function '{name}' not found"), None)),
         }
     }
 

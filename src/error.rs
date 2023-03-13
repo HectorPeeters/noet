@@ -9,4 +9,7 @@ pub enum Error {
 
     #[error("Type error: {0}")]
     Type(String, Option<Span>),
+
+    #[error("Evaluation error: {0}")]
+    Eval(String, Option<Span>),
 }
