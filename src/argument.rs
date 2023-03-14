@@ -97,25 +97,7 @@ impl<'input, C, V> Argument<'input, C, V> for &'input str {
     }
 }
 
-impl<'input, C, V> Argument<'input, C, V> for bool {
-    fn from_element(
-        _evaluator: &Evaluator<C, V>,
-        _context: &mut C,
-        element: ParsedElement<'input>,
-    ) -> Result<Self> {
-        match element {
-            ParsedElement::Text(text) => text.parse().map_err(|_| {
-                Error::Type(
-                    format!("Failed to convert '{text}' to bool in argument"),
-                    None,
-                )
-            }),
-            _ => panic!(),
-        }
-    }
-}
-
-macro_rules! impl_numeric {
+macro_rules! impl_primitive_type {
     ($typ:ty) => {
         impl<'context, 'input, C, V> Argument<'input, C, V> for $typ {
             fn from_element(
@@ -140,12 +122,14 @@ macro_rules! impl_numeric {
     };
 }
 
-impl_numeric!(u8);
-impl_numeric!(u16);
-impl_numeric!(u32);
-impl_numeric!(u64);
+impl_primitive_type!(bool);
 
-impl_numeric!(i8);
-impl_numeric!(i16);
-impl_numeric!(i32);
-impl_numeric!(i64);
+impl_primitive_type!(u8);
+impl_primitive_type!(u16);
+impl_primitive_type!(u32);
+impl_primitive_type!(u64);
+
+impl_primitive_type!(i8);
+impl_primitive_type!(i16);
+impl_primitive_type!(i32);
+impl_primitive_type!(i64);
