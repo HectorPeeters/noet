@@ -1,27 +1,7 @@
 use noet::{
     attribute::Attrs, context::Context, error::Result, evaluator::Evaluator, parser::Parser,
-    registry::FunctionRegistry, value::Value, variadic::Variadic,
+    registry::FunctionRegistry, variadic::Variadic,
 };
-
-#[derive(Debug, PartialEq)]
-pub enum CustomValue {
-    Text(String),
-    Empty(),
-    Linebreak(),
-    Block(Vec<CustomValue>),
-}
-
-impl<'input> Value<'input> for CustomValue {
-    const LINEBREAK: Option<Self> = Some(CustomValue::Linebreak());
-
-    fn from_text_element(text: &'input str) -> Option<Self> {
-        Some(Self::Text(text.to_string()))
-    }
-
-    fn from_block_element(elements: Vec<Self>) -> Option<Self> {
-        Some(Self::Block(elements))
-    }
-}
 
 #[derive(Default)]
 pub struct CustomContext {
@@ -32,8 +12,8 @@ pub struct CustomContext {
     pub variadic_values: Vec<String>,
 }
 
-impl Context<CustomValue> for CustomContext {
-    fn register_functions(registry: &mut FunctionRegistry<Self, CustomValue>) {
+impl Context<()> for CustomContext {
+    fn register_functions(registry: &mut FunctionRegistry<Self, ()>) {
         registry.register_function(func_test, "test");
         registry.register_function(func_version, "version");
         registry.register_function(func_attr, "attr");
@@ -64,23 +44,6 @@ fn func_flag_attr(context: &mut CustomContext, attrs: Attrs, _value: String) -> 
 
 fn func_variadic(context: &mut CustomContext, _attrs: Attrs, args: Variadic<String>) -> Result<()> {
     context.variadic_values = args.into();
-    Ok(())
-}
-
-#[test]
-fn evaluate_text() -> Result<()> {
-    let mut context = CustomContext::default();
-
-    let parser = Parser::new("This is some simple text.");
-
-    let evaluator = Evaluator::new();
-    let evaluated_document = evaluator.evaluate_document(&mut context, parser)?;
-
-    assert_eq!(
-        evaluated_document,
-        vec![CustomValue::Text("This is some simple text.".to_string()),]
-    );
-
     Ok(())
 }
 

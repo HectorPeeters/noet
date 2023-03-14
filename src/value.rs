@@ -8,3 +8,15 @@ where
 
     fn from_block_element(elements: Vec<Self>) -> Option<Self>;
 }
+
+impl<'input> Value<'input> for () {
+    const LINEBREAK: Option<Self> = None;
+
+    fn from_text_element(_text: &'input str) -> Option<Self> {
+        None
+    }
+
+    fn from_block_element(_elements: Vec<Self>) -> Option<Self> {
+        None
+    }
+}
