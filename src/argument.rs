@@ -97,6 +97,9 @@ impl<'input, C, V> Argument<'input, C, V> for &'input str {
     }
 }
 
+// NOTE: A generic implementation using the FromStr trait wouldn't work here as we also implement
+// the Argument trait for the generic Value type. This leads to duplicate implementations in cases
+// where a Value type also implements FromStr.
 macro_rules! impl_primitive_type {
     ($typ:ty) => {
         impl<'context, 'input, C, V> Argument<'input, C, V> for $typ {
