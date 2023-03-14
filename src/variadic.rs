@@ -1,3 +1,5 @@
+use std::{slice::Iter, vec::IntoIter};
+
 use crate::{argument::Argument, error::Result, evaluator::Evaluator, parse_tree::ParsedElement};
 
 pub struct Variadic<T> {
@@ -37,5 +39,15 @@ where
                 .map(|v| T::from_element(evaluator, context, v))
                 .collect::<Result<Vec<_>>>()?,
         })
+    }
+}
+
+impl<T> Variadic<T> {
+    pub fn inner(&self) -> &[T] {
+        &self.inner
+    }
+
+    pub fn into_inner(self) -> Vec<T> {
+        self.inner
     }
 }
