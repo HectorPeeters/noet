@@ -1,5 +1,3 @@
-use std::{slice::Iter, vec::IntoIter};
-
 use crate::{argument::Argument, error::Result, evaluator::Evaluator, parse_tree::ParsedElement};
 
 pub struct Variadic<T> {

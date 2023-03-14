@@ -9,7 +9,9 @@ where
     fn from_block_element(elements: Vec<Self>) -> Option<Self>;
 }
 
-impl<'input> Value<'input> for () {
+pub struct EmptyValue {}
+
+impl<'input> Value<'input> for EmptyValue {
     const LINEBREAK: Option<Self> = None;
 
     fn from_text_element(_text: &'input str) -> Option<Self> {

@@ -39,33 +39,24 @@ impl Context<Element> for Note {
     }
 }
 
-fn func_title(context: &mut Note, _attrs: Attrs, title: String) -> Result<Option<Element>> {
+fn func_title(context: &mut Note, _attrs: Attrs, title: String) {
     context.title = Some(title);
-    Ok(None)
 }
 
-fn func_bold(_context: &mut Note, _attrs: Attrs, elem: Element) -> Result<Option<Element>> {
-    Ok(Some(Element::Bold(Box::new(elem))))
+fn func_bold(_context: &mut Note, _attrs: Attrs, elem: Element) -> Element {
+    Element::Bold(Box::new(elem))
 }
 
-fn func_list(
-    _context: &mut Note,
-    _attrs: Attrs,
-    items: Variadic<Element>,
-) -> Result<Option<Element>> {
-    Ok(Some(Element::List(items.into())))
+fn func_list(_context: &mut Note, _attrs: Attrs, items: Variadic<Element>) -> Element {
+    Element::List(items.into())
 }
 
-fn func_table(
-    _context: &mut Note,
-    attrs: Attrs,
-    items: Variadic<Element>,
-) -> Result<Option<Element>> {
-    Ok(Some(Element::Table(
+fn func_table(_context: &mut Note, attrs: Attrs, items: Variadic<Element>) -> Result<Element> {
+    Ok(Element::Table(
         items.into(),
         attrs.get_value("cols")?.unwrap_or(1),
         attrs.has_flag("header"),
-    )))
+    ))
 }
 
 fn parse_document(doc: &str) -> Result<(Note, Vec<Element>)> {

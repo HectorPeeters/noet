@@ -1,6 +1,6 @@
 use noet::{
     attribute::Attrs, context::Context, error::Result, evaluator::Evaluator, parser::Parser,
-    registry::FunctionRegistry, variadic::Variadic,
+    registry::FunctionRegistry, value::EmptyValue, variadic::Variadic,
 };
 
 #[derive(Default)]
@@ -12,8 +12,8 @@ pub struct CustomContext {
     pub variadic_values: Vec<String>,
 }
 
-impl Context<()> for CustomContext {
-    fn register_functions(registry: &mut FunctionRegistry<Self, ()>) {
+impl Context<EmptyValue> for CustomContext {
+    fn register_functions(registry: &mut FunctionRegistry<Self, EmptyValue>) {
         registry.register_function(func_test, "test");
         registry.register_function(func_version, "version");
         registry.register_function(func_attr, "attr");
@@ -22,14 +22,12 @@ impl Context<()> for CustomContext {
     }
 }
 
-fn func_test(context: &mut CustomContext, _attrs: Attrs, value: String) -> Result<()> {
+fn func_test(context: &mut CustomContext, _attrs: Attrs, value: String) {
     context.value = value;
-    Ok(())
 }
 
-fn func_version(context: &mut CustomContext, _attrs: Attrs, version: u32) -> Result<()> {
+fn func_version(context: &mut CustomContext, _attrs: Attrs, version: u32) {
     context.version = version;
-    Ok(())
 }
 
 fn func_attr(context: &mut CustomContext, attrs: Attrs, _value: String) -> Result<()> {
@@ -37,14 +35,12 @@ fn func_attr(context: &mut CustomContext, attrs: Attrs, _value: String) -> Resul
     Ok(())
 }
 
-fn func_flag_attr(context: &mut CustomContext, attrs: Attrs, _value: String) -> Result<()> {
+fn func_flag_attr(context: &mut CustomContext, attrs: Attrs, _value: String) {
     context.flag_export = attrs.has_flag("export");
-    Ok(())
 }
 
-fn func_variadic(context: &mut CustomContext, _attrs: Attrs, args: Variadic<String>) -> Result<()> {
+fn func_variadic(context: &mut CustomContext, _attrs: Attrs, args: Variadic<String>) {
     context.variadic_values = args.into();
-    Ok(())
 }
 
 #[test]

@@ -14,9 +14,9 @@ impl<Context, Value> FunctionRegistry<Context, Value> {
         }
     }
 
-    pub fn register_function<F, A>(&mut self, func: F, name: &'static str)
+    pub fn register_function<F, A, R>(&mut self, func: F, name: &'static str)
     where
-        F: for<'a> ToFunction<'a, Context, Value, A>,
+        F: for<'a> ToFunction<'a, Context, Value, A, R>,
     {
         self.bindings.insert(name, func.to_function());
     }

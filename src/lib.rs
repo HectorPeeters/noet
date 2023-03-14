@@ -12,5 +12,6 @@ pub mod lexer;
 pub mod parse_tree;
 pub mod parser;
 pub mod registry;
+pub mod return_value;
 pub mod value;
 pub mod variadic;
