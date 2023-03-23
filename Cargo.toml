@@ -4,5 +4,6 @@ version = "0.1.0"
 authors = ["Hector Peeters"]
 edition = "2021"
 repository = "https://github.com/HectorPeeters/noet.git"
+license = "MIT"
 
 [dependencies]
