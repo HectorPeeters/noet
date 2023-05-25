@@ -61,6 +61,11 @@ impl<'input> Lexer<'input> {
         self.chars.peek().copied()
     }
 
+    #[inline]
+    fn peek_next(&mut self) -> Option<char> {
+        self.chars.clone().nth(1)
+    }
+
     fn identifier(&mut self, token_type: TokenType) -> Token {
         let is_valid_char = |c: char| {
             c.is_ascii_lowercase() || c.is_ascii_uppercase() || c.is_ascii_digit() || c == '-'
@@ -110,6 +115,7 @@ impl<'input> Lexer<'input> {
     fn whitespace(&mut self) -> Token {
         loop {
             match self.peek() {
+                Some('\n') if self.peek_next() == Some('\n') => break,
                 Some(c) if Self::is_whitespace(c) => {
                     self.consume();
                 }

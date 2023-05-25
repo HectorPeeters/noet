@@ -420,4 +420,49 @@ mod tests {
         assert_eq!(parser.next(), Some(Ok(ParsedElement::Text("Test"))));
         assert!(parser.next().is_none());
     }
+
+    #[test]
+    fn double_whitespace_between_functions() {
+        let mut parser = Parser::new(
+            r#"[#title This is some document]
+
+[#table @cols(2) @header
+| Name | Score
+| Apple | 4
+| Banana | 8
+| Pear | 9
+]"#,
+        );
+
+        assert_eq!(
+            parser.next(),
+            Some(Ok(ParsedElement::Function(
+                "title",
+                vec![],
+                vec![ParsedElement::Text("This is some document")]
+            )))
+        );
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::HardLinebreak())));
+        assert_eq!(
+            parser.next(),
+            Some(Ok(ParsedElement::Function(
+                "table",
+                vec![
+                    Attribute::new_value("cols", "2"),
+                    Attribute::new_flag("header")
+                ],
+                vec![
+                    ParsedElement::Text("Name"),
+                    ParsedElement::Text("Score"),
+                    ParsedElement::Text("Apple"),
+                    ParsedElement::Text("4"),
+                    ParsedElement::Text("Banana"),
+                    ParsedElement::Text("8"),
+                    ParsedElement::Text("Pear"),
+                    ParsedElement::Text("9"),
+                ]
+            )))
+        );
+        assert!(parser.next().is_none());
+    }
 }
