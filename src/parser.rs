@@ -79,8 +79,8 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
-    fn text(&mut self, start_with_parent: bool) -> ParsedElement<'input> {
-        let mut paren_depth = start_with_parent as u32;
+    fn text(&mut self, start_with_paren: bool) -> ParsedElement<'input> {
+        let mut paren_depth = start_with_paren as u32;
 
         loop {
             match self.peek_type() {
@@ -408,6 +408,16 @@ mod tests {
                 ]
             )))
         );
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
+    fn space_after_paragraph() {
+        let mut parser = Parser::new("Test \n\nTest");
+
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::Text("Test "))));
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::HardLinebreak())));
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::Text("Test"))));
         assert!(parser.next().is_none());
     }
 }

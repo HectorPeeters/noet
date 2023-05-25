@@ -104,7 +104,7 @@ impl<'input> Lexer<'input> {
     }
 
     fn is_whitespace(c: char) -> bool {
-        c == ' ' || c == '\n' || c == '\t' || c == '\r'
+        c == ' ' || c == '\t' || c == '\n' || c == '\r'
     }
 
     fn whitespace(&mut self) -> Token {

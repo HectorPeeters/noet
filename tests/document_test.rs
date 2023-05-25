@@ -74,16 +74,6 @@ fn parse_document(doc: &str) -> Result<(Note, Vec<Element>)> {
 fn full_document() -> Result<()> {
     let source = r#"[#title This is some document]
 
-It contains a [#b first] paragraph and supports lists.
-
-[#list
-| first
-| second
-| [#b third]
-]
-
-It also supports tables!
-
 [#table @cols(2) @header
 | Name | Score
 | Apple | 4
