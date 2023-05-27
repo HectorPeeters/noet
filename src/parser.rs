@@ -57,8 +57,8 @@ impl<'input> Parser<'input> {
 
     #[inline]
     fn skip_whitespace(&mut self) {
-        // NOTE: unwrapping here is allowed as we first check the next token type before consuming
         while self.peek_type() == Some(TokenType::Whitespace) {
+            // NOTE: unwrapping here is allowed as we first check the next token type before consuming
             self.consume_expect(TokenType::Whitespace).unwrap();
         }
     }

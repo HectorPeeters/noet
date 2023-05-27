@@ -1,4 +1,4 @@
-use std::{iter::Peekable, ops::Range, str::Chars};
+use std::{ops::Range, str::Chars};
 
 pub type Span = Range<usize>;
 
@@ -30,7 +30,7 @@ impl Token {
 }
 
 pub struct Lexer<'input> {
-    chars: Peekable<Chars<'input>>,
+    chars: Chars<'input>,
     start: usize,
     current: usize,
 }
@@ -38,7 +38,7 @@ pub struct Lexer<'input> {
 impl<'input> Lexer<'input> {
     pub fn new(input: &'input str) -> Self {
         Self {
-            chars: input.trim().chars().peekable(),
+            chars: input.trim().chars(),
             start: 0,
             current: 0,
         }
@@ -58,7 +58,7 @@ impl<'input> Lexer<'input> {
 
     #[inline]
     fn peek(&mut self) -> Option<char> {
-        self.chars.peek().copied()
+        self.chars.clone().next()
     }
 
     #[inline]
