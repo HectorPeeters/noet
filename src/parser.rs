@@ -69,6 +69,11 @@ impl<'input> Parser<'input> {
     }
 
     #[inline]
+    fn peek_span(&mut self) -> Option<Span> {
+        self.tokens.peek().map(|t| t.span.clone())
+    }
+
+    #[inline]
     fn start_span(&mut self) {
         self.start = self.current;
     }
@@ -189,7 +194,7 @@ impl<'input> Parser<'input> {
             } else if self.peek_type() != Some(TokenType::RightBracket) {
                 return Err(Error::Parse(
                     "Expected RightBracket at the end of function arguments".to_string(),
-                    None,
+                    self.peek_span(),
                 ));
             }
         }
