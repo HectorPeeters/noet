@@ -84,16 +84,8 @@ impl<'input> Lexer<'input> {
     }
 
     fn text(&mut self) -> Token {
-        let is_invalid_char = |c: char| {
-            c == '['
-                || c == ']'
-                || c == '('
-                || c == ')'
-                || c == '|'
-                || c == '#'
-                || c == '@'
-                || Self::is_whitespace(c)
-        };
+        let is_invalid_char =
+            |c: char| ['[', ']', '(', ')', '|', '#', '@'].contains(&c) || Self::is_whitespace(c);
 
         loop {
             match self.peek() {
@@ -131,24 +123,20 @@ impl<'input> Iterator for Lexer<'input> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some(curr) = self.consume() else {
-            return None;
-        };
-
-        match curr {
-            '[' => Some(self.token(TokenType::LeftBracket)),
-            ']' => Some(self.token(TokenType::RightBracket)),
-            '(' => Some(self.token(TokenType::LeftParen)),
-            ')' => Some(self.token(TokenType::RightParen)),
-            '|' => Some(self.token(TokenType::ArgumentSeparator)),
-            '#' => Some(self.identifier(TokenType::FunctionIdentifier)),
-            '@' => Some(self.identifier(TokenType::AttributeIdentifier)),
+        self.consume().map(|curr| match curr {
+            '[' => self.token(TokenType::LeftBracket),
+            ']' => self.token(TokenType::RightBracket),
+            '(' => self.token(TokenType::LeftParen),
+            ')' => self.token(TokenType::RightParen),
+            '|' => self.token(TokenType::ArgumentSeparator),
+            '#' => self.identifier(TokenType::FunctionIdentifier),
+            '@' => self.identifier(TokenType::AttributeIdentifier),
             '\n' if matches!(self.peek(), Some('\n')) => {
                 self.consume();
-                Some(self.token(TokenType::HardLinebreak))
+                self.token(TokenType::HardLinebreak)
             }
-            ' ' | '\t' | '\n' | '\r' => Some(self.whitespace()),
-            _ => Some(self.text()),
-        }
+            ' ' | '\t' | '\n' | '\r' => self.whitespace(),
+            _ => self.text(),
+        })
     }
 }
