@@ -427,6 +427,14 @@ mod tests {
     }
 
     #[test]
+    fn special_characters() {
+        let mut parser = Parser::new("categorieën");
+
+        assert_eq!(parser.next(), Some(Ok(ParsedElement::Text("categorieën"))));
+        assert!(parser.next().is_none());
+    }
+
+    #[test]
     fn double_whitespace_between_functions() {
         let mut parser = Parser::new(
             r#"[#title This is some document]

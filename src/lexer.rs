@@ -52,8 +52,11 @@ impl<'input> Lexer<'input> {
 
     #[inline]
     fn consume(&mut self) -> Option<char> {
-        self.current += 1;
-        self.chars.next()
+        let result = self.chars.next();
+        if let Some(result) = result {
+            self.current += format!("{result}").len();
+        }
+        result
     }
 
     #[inline]
